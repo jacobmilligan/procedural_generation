@@ -1,4 +1,4 @@
-program GameMain;
+program ProceduralGeneration;
 uses SwinGame, sgTypes, Terrain, MapUtils;
 
 //	Initializes the 2D map grid with the given size and sets the default 
@@ -9,11 +9,13 @@ var
 	x, y: Integer;
 begin
 
+	// Set all of the column sizes to the right length
 	for column := 0 to size do
 	begin
 		SetLength(tiles, column, size);
 	end;
 
+	// Iterate map and setup default values for all tiles
 	for x := 0 to High(tiles) do
 	begin
 		for y := 0 to High(tiles) do
@@ -43,7 +45,7 @@ begin
 	// Setup seed
 	if random then
 	begin
-		Randomize
+		Randomize;
 	end
 	else
 	begin
@@ -72,6 +74,7 @@ begin
 			if spawnFound then
 				break;
 
+			// Search for a sand tile to spawn the player on
 			if (i > 1) and (result.tiles[i, j].flag = Sand) and (result.tiles[i, j].feature = NoFeature) then
 			begin
 				SpriteSetX(result.player, i * 32);
@@ -83,10 +86,10 @@ begin
 		end;
 	end;
 
-	// Recursively call self with higher smoothness value if spawn not found
+	// Recursively call self with new random value if spawn not found
 	if not spawnFound then
 	begin
-		CreateMap(size, random, seed);
+		CreateMap(size, true, seed);
 	end;
 end;
 
@@ -106,6 +109,9 @@ begin
   end;
 end;
 
+//
+//	Determines whether a given point is inside the tilemap or not
+//
 function IsInMap(constref map: MapData; x, y: Integer): Boolean;
 begin
 	result := false;
@@ -118,25 +124,33 @@ begin
 	end;
 end;
 
+//
+//	Draws the current map data to the screen but only within the bounds of
+//	the current Camera view.
+//
 procedure DrawMap(constref map: MapData);
 var
 	x, y: Integer;
 	newView: TileView;
 begin
+	// Get a new tile view to see what should be drawn
 	newView := CreateTileView(map);
 
+	// Iterate only tiles in the tile map that correspond to a
+	// visible tile 
 	for x := newView.x to newView.right do
   	begin
 	  	for y := newView.y to newView.bottom do
 	  	begin
-	  		if IsInMap(map, x, y) then
+	  		
+	  		if IsInMap(map, x, y) and map.tiles[x, y].hasBmp then
 	  		begin
-	  			if map.tiles[x, y].hasBmp then
-		  		begin
-		  			DrawBitmap(map.tiles[x, y].bmp, x * map.tilesize, y * map.tilesize);
-					DrawBitmap(map.tiles[x, y].featureBmp, x * map.tilesize, y * map.tilesize);
-		  		end;
+	  			// Draw the tile
+	  			DrawBitmap(map.tiles[x, y].bmp, x * map.tilesize, y * map.tilesize);
+	  			// Draw a tree or no feature
+				DrawBitmap(map.tiles[x, y].featureBmp, x * map.tilesize, y * map.tilesize);
 	  		end;
+
 	  	end;
   	end;
 end;
@@ -146,9 +160,11 @@ var
 	newX, newY: Integer;
 begin
 
+	// Used to determine if they should be allowed to move in a given direction
 	newX := map.playerX;
 	newY := map.playerY;
 
+	// Change values depending on direction
 	if KeyDown(UpKey) then
 	begin
 		newY -= 1;
@@ -166,24 +182,31 @@ begin
 		newX -= 1;
 	end;
 
-	if (newX <= 0) or (newX >= High(map.tiles) - 1) or (map.tiles[newX, newY].flag = Water) then
+	//	If either newX or newY are outside the map bounds or are a collidable tile, reset
+	//	the players position and don't move them
+	if (newX <= 0) or (newX >= High(map.tiles) - 1) or (map.tiles[newX, newY].collidable) then
 	begin
 		newX := map.playerX;
 	end;
-	if (newY <= 0) or (newY >= High(map.tiles) - 1) or (map.tiles[newX, newY].flag = Water) then
+	if (newY <= 0) or (newY >= High(map.tiles) - 1) or (map.tiles[newX, newY].collidable) then
 	begin
 		newY := map.playerY;
 	end;
 
+	// Assign the new values to the player
 	map.playerY := newY;
 	map.playerX := newX;
 
+	// Move the player according to world coordinates rather than tile
+	// coordinates by multiplying their tile coordinates by the tilesize
 	SpriteSetY(map.player, map.playerY * map.tilesize);
 	SpriteSetX(map.player, map.playerX * map.tilesize);
 
 end;
 
 procedure Main();
+const
+	MOVE_INTERVAL = 4;
 var
 	map: MapData;
 	moveDelay: Integer;
@@ -200,8 +223,10 @@ begin
 
 		ClearScreen(ColorWhite);
 		
+		// Only moves the player at specific intervals so as to
+		// limit from running super fast
 		moveDelay += 1;
-		if moveDelay > 3 then
+		if moveDelay > MOVE_INTERVAL then
 		begin
 			HandleInput(map);
 			moveDelay := 0;
@@ -211,13 +236,14 @@ begin
 		DrawMap(map);
 		DrawSprite(map.player);
 
+		// Create map drawing loop to show player where they are
 		if KeyTyped(EscapeKey) then
 		begin
 			ProcessEvents();
 			repeat
 				ProcessEvents();
-				DrawMapCartography(map);
-			until KeyTyped(EscapeKey);
+				DrawMapCartography(map); // Draw the map to screen
+			until KeyTyped(EscapeKey) or WindowCloseRequested();
 		end;
 
 		RefreshScreen(60);
