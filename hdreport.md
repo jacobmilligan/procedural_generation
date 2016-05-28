@@ -17,9 +17,19 @@ Good question. Many games, such as in indie title [Dwarf Corp.](http://www.gamas
 
 We could design an algorithm from scratch to generate our heightmap but that would take a long time and the result probably wouldn't be very effective, so we're going to borrow a very well-known and academically sound one called **Random Midpoint Displacement** (Fournier, Alain et. al. 1982), also known as **the Diamond-Square Algorithm**. At its core, the purpose of this algorithm is to generate pseudo-random noise in a desirable pattern, i.e. one that resembles a realistic spread of terrain height values. Each point of noise is stored in a data structure (in our case, a 2D array) and holds a single value - a number representing its elevation. The result is something like this:
 
+![A generated map](map.jpg)
+
+The basic concept behind Diamond-Square can be summed like so:
+* Take an empty grid which must be of size $2^{n}+1$ in order to work. Then assign the corners a *seed* value, a number that all other calculations are based off. This means that with the same seed, we should get the exact same result.
+* **The Sqaure Step** - Take the grids four corners, average their total, find their mid point and assign that point the average plus a random value.
+* **The Diamond Step** - Given the previous step, we now have a diamond shape surrounding a new mid point. Take the average of all points in the diamond and assign the new midpoint that value plus a random amount.
+* Iterate until the next step in the process is smaller than zero
+
+This process can be best visualized using graphs, seen below.
+
+![The Diamond Square Algorithm](diamondsquare.jpg)
 
 
-The easiest way to understand how this algorithm works
 
 # Reference List
 FOURNIER, A., FUSSELL, D., CARPENTER, L. & FOLEY, J. 1982. *Computer Rendering of Stochastic Models*. Communications of the ACM, 25, 371-384.

@@ -215,7 +215,7 @@ begin
 	LoadResources();
   	OpenGraphicsWindow('Procedural Map Generation', 800, 600);
   
-	map := CreateMap(257, true);
+	map := CreateMap(513, true);
 	//PrintMapToConsole(map);
 	moveDelay := 0;
 	repeat
