@@ -7,6 +7,12 @@
 \usepackage[divipsnames]{xcolor}
 \usepackage{float}
 \usepackage{minted}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+
+\makeatletter
+\renewcommand{\ALG@name}{Pseudocode}
 
 \bibliography{ref}
 
@@ -80,7 +86,7 @@ This process can be best visualized using graphs, seen in the example pictured b
 	
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=\linewidth]{diamondsquare.jpg}
+	\includegraphics[width=0.9\linewidth,trim=4 4 4 4,clip]{diamondsquare.jpg}
 	\renewcommand{\figurename}{Example}
 	\caption{Summary of the Diamond-Square algorithm}
 \end{figure}
@@ -106,13 +112,297 @@ There will also be several functions and resources referenced later on that we w
 
 \section{Implementing Terrain Generation}
 
-\subsection{Generating a Heightmap}
+\subsection{Setting Up}
 
 \paragraph{We need to implement Diamond-Square before we can do any other terrain generation.}\mbox{}
-First, download and install the \href{http://www.freepascal.org/download.var}{latest version of FPC} (Free Pascal Compiler) and a Pascal SwinGame template from the \href{http://swingame.com/index.php/downloads.html}{SwinGame Website}. Once this is complete, copy your downloaded SwinGame template to wherever you normally store your code (on my Mac it sits in \mintinline{bash}{/Users/Jacob/Dev/Repos/} - all our coding will take place in the \mintinline{bash}{/src/} folder and whenever you need to build and run the game, type the command \mintinline{bash}{./build.sh && ./run.sh} (drop the \mintinline{bash}{./} on Windows machines). Rename the \mintinline{pascal}{GameMain.pas} file to something a bit more descriptive, such as \mintinline{pascal}{ProceduralGeneration.pas} and open it up in your favourite text editor. 
+First, download and install the \href{http://www.freepascal.org/download.var}{latest version of FPC} (Free Pascal Compiler) and a Pascal SwinGame template from the \href{http://swingame.com/index.php/downloads.html}{SwinGame Website}. Once this is complete, copy your downloaded SwinGame template to wherever you normally store your code (on my Mac it sits in \mintinline{bash}{/Users/Jacob/Dev/Repos/} - all our coding will take place in the \mintinline{bash}{/src/} folder and whenever you need to build and run the game, type the command \mintinline{bash}{./build.sh && ./run.sh} (drop the \mintinline{bash}{./} on Windows machines). Rename the \mintinline{pascal}{GameMain.pas} file to something a bit more descriptive, such as \mintinline{pascal}{ProceduralGeneration.pas} and open it up in your favourite text editor.
+
+\paragraph{The first thing we need to do is to replace the code in the stock \mintinline{pascal}{Main()} procedure with the following:}\mbox{}
+
+\begin{minted}[bgcolor=darkgray,style=native]{pascal}
+procedure Main();
+var
+  map: MapData;
+begin
+  DiamondSquare(map, 100, 20);
+  PrintMapToConsole(map);
+end;
+\end{minted}
+
+Before we render anything to a graphics window, we should first implement our algorithm and ensure that it functions correctly by printing it to the console, both procedures that will be called from \mintinline{pascal}{Main()}. We've also declared a new \mintinline{pascal}{MapData} variable which we'll be creating soon.
+
+\vspace{1mm}
+
+Next, create a new file in the \mintinline{bash}{/src/} directory called \mintinline{pascal}{Terrain.pas}, open it up and write a new Unit file skeleton:
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2]{pascal}
+unit Terrain;
+
+interface
+	uses SwinGame;
+
+	type
+
+		//
+		//	Valid tile types for building maps with.
+		//	Used as a terrain flag for different logic.
+		//
+		TileType = (Water, Sand, Dirt, Grass, MediumGrass, HighGrass, SnowyGrass, Mountain);
+
+		//
+		//	Represents a feature on top of a tile that can have a bitmap,
+		//	collision, and be interactive
+		//
+		FeatureType = (NoFeature, Tree);
+
+		//
+		//	Represents a tile on the map - has a terrain flag,
+		//	elevation and bitmap
+		//
+		Tile = record
+			// terrain type
+			flag: TileType;
+
+			// type of feature if any
+			feature: FeatureType;
+
+			// uses collision detection
+			collidable: Boolean;
+
+			//
+			//	Represents the tiles elevation - zero represents sea
+			//	level.
+			//
+			elevation: Integer;
+
+			// tiles base bitmap
+			bmp: Bitmap;
+
+			hasBmp: Boolean;
+
+			// bitmap for whatever feature is on top of the tiles
+			featureBmp: Bitmap;
+		end;
+
+		//
+		//	Array used to hold a tilemap
+		//
+		TileGrid = array of array of Tile;
+
+		//
+		//	Main representation of the current map. Holds a tile grid, alongside
+		//	data related to size, smoothness, seed values.
+		//
+		MapData = record
+			tiles: TileGrid;
+			player: Sprite;
+			playerX, playerY: Integer;
+			size, seed, tilesize, playerIndicator: Integer;
+		end;
+
+	//
+	//	Fills a MapData's TileGrid with generated heightmap data
+	//	using the Diamond-Square fractal generation algorithm
+	//	This heightmap data gets used later on to generate terrain realistically
+	//
+	procedure DiamondSquare(var map: MapData; maxHeight, smoothness: Integer);
+
+	//
+	//	Uses elevation values generated by DiamondSquare to assign appropriate
+	//	bitmaps and randomly generate trees
+	//
+	procedure GenerateTerrain(var map: MapData);
 
 
+implementation
+
+	procedure DiamondSquare(var map: MapData; maxHeight, smoothness: Integer);
+	begin
+		//code
+	end;
+
+	procedure GenerateTerrain(var map: MapData);
+	begin
+		//code
+	end;
+
+
+end.
+\end{minted}
+
+That's a lot of code, so let's step through it.
+
+\vspace{1mm}
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2]{pascal}
+unit Terrain;
+
+interface
+	uses SwinGame;
+
+	type
+
+		//
+		//	Valid tile types for building maps with.
+		//	Used as a terrain flag for different logic.
+		//
+		TileType = (Water, Sand, Dirt, Grass, MediumGrass, HighGrass, SnowyGrass, Mountain);
+
+		//
+		//	Represents a feature on top of a tile that can have a bitmap,
+		//	collision, and be interactive
+		//
+		FeatureType = (NoFeature, Tree);
+\end{minted}
+
+First, we create a new \mintinline{pascal}{unit} file named \mintinline{pascal}{Terrain}. A \mintinline{pascal}{unit} file has two sections of code: 
+
+\begin{itemize}
+
+\item
+The \mintinline{pascal}{interface} where all of our types are declared alongside \textbf{forward-declared} functions and procedures. This is the part of the \mintinline{pascal}{unit} file that other units and the main program will actually see.
+
+\item
+The  \mintinline{pascal}{implementation} section where we actually define the body of our functions and procedures.
+
+\end{itemize}
+
+Both of these sections of code can make use of the types, functions, and procedures created in other units through the \mintinline{pascal}{uses <UnitName>} syntax.
+
+In the \mintinline{pascal}{type} section of the unit, we declare two enumeration types.- \mintinline{pascal}{TileType} \& \mintinline{pascal}{FeatureType}. These will be used by our \mintinline{pascal}{GenerateTerrain()} procedure and the \mintinline{pascal}{MapUtils.pas unit} file to determine how to treat different tiles. Of note is the \mintinline{pascal}{FeatureType enumeration} which at the moment can only be a Tree or nothing. Generally speaking, If we only wanted to represent Trees in the game world, we would be better off using a \mintinline{pascal}{hasTree Boolean} variable but the reason we've used an \mintinline{pascal}{enumeration} is to future-proof our program; if we wanted to, later on, add logs or rocks to the game we would only need to add a new element to \mintinline{pascal}{FeatureType} and alter the terrain generation code.
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2]{pascal}
+//
+//	Represents a tile on the map - has a terrain flag,
+//	elevation and bitmap
+//
+Tile = record
+	// terrain type
+	flag: TileType;
+
+	// type of feature if any
+	feature: FeatureType;
+
+	// uses collision detection
+	collidable: Boolean;
+
+	//
+	//	Represents the tiles elevation - zero represents sea
+	//	level.
+	//
+	elevation: Integer;
+
+	// tiles base bitmap
+	bmp: Bitmap;
+
+	hasBmp: Boolean;
+
+	// bitmap for whatever feature is on top of the tiles
+	featureBmp: Bitmap;
+end;
+
+//
+//	Array used to hold a tilemap
+//
+TileGrid = array of array of Tile;
+
+//
+//	Main representation of the current map. Holds a tile grid, alongside
+//	data related to size, smoothness, seed values.
+//
+MapData = record
+	tiles: TileGrid;
+	player: Sprite;
+	playerX, playerY: Integer;
+	size, seed, tilesize, playerIndicator: Integer;
+end;
+\end{minted}
+
+\paragraph{Here, we declare our most important records and types.} The \mintinline{pascal}{Tile record} is what represents a single element of our tile grid and contains a \mintinline{pascal}{TileType} \mintinline{pascal}{flag}, a \mintinline{pascal}{FeatureType}, a \mintinline{pascal}{Boolean} variable, \mintinline{pascal}{collidable} to communicate that the particular tile is subject to collision detection, the \mintinline{pascal}{elevation Integer} value, its attached base tile \mintinline{pascal}{Bitmap} and its feature \mintinline{pascal}{Bitmap} (in this case either a Tree or an invisible bitmap) to render alongside a \mintinline{pascal}{hasBmp Boolean} value used to stop our drawing procedures from trying to draw a non-existent bitmap. We've also declared a new \mintinline{pascal}{open array of dynamic Tile arrays} to function as our tile grid. As 2D arrays are essentially just an array in which each of its elements is just another array of elements of a specified type, we've used the syntax \mintinline{pascal}{array of array of Tile} to declare this type.
+
+\paragraph{Finally, we declare our \mintinline{pascal}{MapData} type.} This \mintinline{pascal}{record} will hold our tile grid, the players \mintinline{pascal}{Sprite} variable (A SwinGame library data type), the size of the map, the size of each tile, it's seed or starting value, and an indicator used by the \mintinline{pascal}{MapUtils.pas DrawMapCartography() procedure} to locate where the player is relative to the drawn tile map. Important to note is the \mintinline{pascal}{playerX} \& \mintinline{pascal}{playerY} variables as these aren't the players position in pixel coordinates (there will be a total of 275952697344 pixels on the final map, way too large a number to even fit in a \mintinline{pascal}{LongWord} type), they are the players current pixel position translated to 2D array index equivalents - these variables will be used to calculate simple collision detection later on.
+
+\vspace{1mm}
+
+Finally, we forward declare our two terrain generation procedures:
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2]{pascal}
+//
+//	Fills a MapData's TileGrid with generated heightmap data
+//	using the Diamond-Square fractal generation algorithm
+//	This heightmap data gets used later on to generate terrain realistically
+//
+procedure DiamondSquare(var map: MapData; maxHeight, smoothness: Integer);
 	
+//
+//	Uses elevation values generated by DiamondSquare to assign appropriate
+//	bitmaps and randomly generate trees
+//
+procedure GenerateTerrain(var map: MapData);
+\end{minted}
+
+\subsection{Implementing Terrain Generation}
+
+\paragraph{Moving onto the \mintinline{pascal}{implementation} section, we can now build our terrain generation algorithms.} Starting with \mintinline{pascal}{DiamondSquare}. The basic pseudocode for the algorithm looks something like this:
+
+\begin{algorithm}
+\caption{The Diamond-Square algorithm}
+
+\begin{algorithmic}
+\Procedure{DiamondSquare}{$map,\ maxHeight,\ smoothness$}
+	\State Initialize the four corners of the map with a seed value
+	\State $midPoint \gets$ Average of the four corners $+ \ Random(1000)$
+	\State $nextStep \gets Length(tileGrid) \div 2$
+	
+	\While{$nextStep > 0$}
+		
+	\EndWhile
+	
+\EndProcedure	
+\end{algorithmic}
+\end{algorithm}
+
+
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2]{pascal}
+implementation
+
+	procedure DiamondSquare(var map: MapData; maxHeight, smoothness: Integer);
+	var
+		x, y: Integer;
+		midpointVal: Double;
+		nextStep, cornerCount: Integer;
+	begin
+		x := 0;
+		y := 0;
+		midpointVal := 0;
+		nextStep := Round(Length(map.tiles) / 2 ); // Center of the tile grid
+
+		// Seed upper-left corner extremely low elevation to force it to
+		// start with water
+		map.tiles[x, y].elevation := -1500;
+\end{minted}
+
+Initially, we declare the x \& y variables to track our iterations through the heightmap generation process, then the \mintinline{pascal}{midpointVal Double} which we will use to calculate the current midpoint value (average plus a random value) at both the diamond and square steps. The \mintinline{pascal}{nextStep} variable is an important one and will control which tile in the grid we're analysing at any given moment and will be made smaller at each iteration until it equals 0, at which point the algorithm is finished. This is set to the centre point of the tile grid and at each iteration will be used to determine the location of a midpoint. Finally, we 'seed' the top-left corner of the map with an elevation of -1500 to ensure that the map will always have some ocean as its starting point which will help achieve our goal of producing a continent-like map.
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2]{pascal}
+// Initialize four corners of map with the same value as above
+while x < Length(map.tiles) do
+begin
+	while y < Length(map.tiles) do
+	begin
+		map.tiles[x, y].elevation := map.tiles[0, 0].elevation;
+		y += 2 * nextStep;
+	end;
+
+	x += 2 * nextStep;
+	y := 0;
+end;
+
+x := 0;
+y := 0;
+\end{minted}
+
 \printbibliography
 	
 \end{document}
