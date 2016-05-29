@@ -21,7 +21,7 @@
 }
 
 \title{2D Procedural Map Generation \\ \large With Pascal \& SwinGame}
-\author{Jacob Milligan \\ 100660682}
+\author{Jacob Milligan \\ \small Student ID - 100660682}
 \date{}
 
 \begin{document}
@@ -31,9 +31,12 @@
 	
 \section{Procedural Generation}
 
-Very broadly speaking, in game development there are two primary ways to generate content for a project. The most common and controllable way is to make each part by hand - in our 			case we'll be referring to a 2D tile map as our content.
+\subsection{Procedural over Manual}
+
+
+Very broadly speaking, in game development there are two primary ways to generate content for a project. The most common and controllable way is to make each part by hand - in our case we'll be referring to a 2D tile map as our content.
 		
-For small maps this isn't a problem; it's very straight-forward to declare each tile as an element of a statically-sized 2D array (we'll go into how this is done later) and just draw those tiles 	to the screen, perhaps also drawing different sprites on top of each tile for NPC's or the player. But what happens as our map grows in size? As it goes from a 32 x 32 map to a 256 x 256 sized map, or even larger? Even if we've created a system for writing our maps out as text files to be read in, already saving lots of time, this can very quickly become time-consuming. This is a valid way of generating content, in fact the developers on CD Projekt Red's The Witcher 3: Wild Hunt did just that \parencite[1]{witcher}, a pretty amazing feat. However, we don't have the resources or manpower of CD Projekt Red, so what's the solution?
+For small maps this isn't a problem; it's very straight-forward to declare each tile as an element of a statically-sized 2D array (we'll go into how this is done later) and just draw those tiles 	to the screen, perhaps also drawing different sprites on top of each tile for NPC's or the player. But what happens as our map grows in size? As it goes from a 32 x 32 map to a 256 x 256 sized map, or even larger? Even if we've created a system for writing our maps out as text files to be read in, already saving lots of time, this can very quickly become time-consuming. This is a valid way of generating content, in fact the developers on CD Projekt Red's The Witcher 3: Wild Hunt did just that \parencite{witcher}, a pretty amazing feat. However, we don't have the resources or manpower of CD Projekt Red, so what's the solution?
 		
 \paragraph{Procedural Generation algorithms are the solution}\mbox{}
 		
@@ -41,13 +44,13 @@ Games such as Minecraft, Dwarf Fortress, and the upcoming No Mans Sky all make u
 		
 \paragraph{"So then where do we start?"}
 		
-Good question. Many games, such as in indie title Dwarf Corp. \parencite{dwarfcorp}, begin by simulating tectonic plate activity which is how terrain forms in the real world), but we're going to go a different route and start by generating a realistic height map, a 2D array of elements that hold a generated elevation value, that we'll use to base the rest of our map off. We will use this starting point to procedurally generate a map that can be navigated by the player. Along the way, we will make heavy use of the SwinGame API to handle all graphics-related functionality and briefly touch on other concepts such as basic collision detection, all of which we will code using Pascal.
+Good question. Many games, such as in indie title Dwarf Corp. \parencite{dwarfcorp}, begin by simulating tectonic plate activity, erosion, and river formation to carve out their terrain -  in a similar process to how terrain forms in the real world \parencite[pp. 46]{huggett}. However, we're going to go a different route and start by generating a realistic height map, a 2D array of elements that hold a generated elevation value, that we'll use to base the rest of our map off. We will use this starting point to procedurally generate a map that can be navigated by the player. Along the way, we will make heavy use of the SwinGame API to handle all graphics-related functionality and briefly touch on other concepts such as basic collision detection, all of which we will code using Pascal.
 	
 	
-\section{Diamonds \& Squares}\label{diamonds-squares}
+\subsection{Diamonds \& Squares}
 
 
-To generate a heightmap, it would be possible to design an algorithm from scratch, however that would take a long time and the result probably wouldn't be very effective, so we're going to borrow a very well-known and academically sound one called \textbf{Random Midpoint Displacement} \parencite[2]{fournier}, also known as \textbf{the Diamond-Square Algorithm}. At its core, the purpose of this algorithm is to generate pseudo-random noise in a desirable pattern, i.e.~one that resembles a realistic spread of terrain height values. Each point of noise is stored in a data structure (in our case, a 2D array) and holds a single value - a number representing its elevation. The result is something like this:
+To generate a heightmap, it would be possible to design an algorithm from scratch, however that would take a long time and the result probably wouldn't be very effective, so we're going to borrow a very well-known and academically sound one called \textbf{Random Midpoint Displacement} \parencite{fournier}, also known as \textbf{the Diamond-Square Algorithm}. At its core, the purpose of this algorithm is to generate pseudo-random noise in a desirable pattern, i.e.~one that resembles a realistic spread of terrain height values. Each point of noise is stored in a data structure (in our case, a 2D array) and holds a single value - a number representing its elevation. The result is something like this:
 	
 \begin{figure}[H]
 	\centering
@@ -59,16 +62,18 @@ To generate a heightmap, it would be possible to design an algorithm from scratc
 \paragraph{The basic concept behind Diamond-Square can be summed up like so:}
 	
 \begin{itemize}
+
 	\item
-		Take an empty grid which must be of size \(2^{n}+1\) in order to work. Then assign the corners a \emph{seed} value, a number that all other calculations are based off. This means 				that with the same seed, we should get the exact same result.
+		Take an empty grid which must be of size \(2^{n}+1\) in order to work. Then assign the corners a \emph{seed} value, a number that all other calculations are based off. This means that with the same seed, we should get the exact same result.
 	\item
 		\textbf{The Sqaure Step} - Take the grids four corners, average their total, find their mid point and assign that point the average plus a random value.
 	\item
-		\textbf{The Diamond Step} - Given the previous step, we now have a diamond shape surrounding a new mid point. Take the average of all points in the diamond and assign the new 			midpoint that value plus a random amount.
+		\textbf{The Diamond Step} - Given the previous step, we now have a diamond shape surrounding a new mid point. Take the average of all points in the diamond and assign the new midpoint that value plus a random amount.
 	\item
 		Use a \mintinline{Pascal}{nextStep} variable to determine the next point to calculate. 
 	\item
-		Iterate until \mintinline{Pascal}{nextStep} is smaller than zero
+		Iterate until \mintinline{Pascal}{nextStep} is smaller than zero.
+		
 \end{itemize}
 	
 This process can be best visualized using graphs, seen in the example pictured below.
@@ -84,19 +89,29 @@ This process can be best visualized using graphs, seen in the example pictured b
 However, before starting on an implementation, as with all software development, it's a good idea to define the requirements for our program - what functions, procedures, data structures, and features do we want to include?
 	
 \begin{itemize}
+
 \item
-	First, we will define the data structures that will be required by our program. We're going to first need a \mintinline{pascal}{Tile record} to hold data related to each tile in the map such as if it's 		collidable, the bitmap that should be drawn for it, it's type, and elevation. We'll also need a \mintinline{pascal}{MapData record} to contain our tile grid, the players sprite and location data, and 	its size.
+	First, we will define the data structures that will be required by our program. We're going to first need a \mintinline{pascal}{Tile record} to hold data related to each tile in the map such as if it's collidable, the bitmap that should be drawn for it, it's type, and elevation. We'll also need a \mintinline{pascal}{MapData record} to contain our tile grid, the players sprite and location data, and its size.
 \item
-	Very importantly, we'll also need our terrain generation procedures - \mintinline{pascal}{DiamondSquare()} \& \mintinline{pascal}{GenerateTerrain()}. \mintinline{pascal}{DiamondSquare()} will be 	responsible for creating a new heightmap for a passed-in \mintinline{pascal}{MapData()} record, whereas \mintinline{pascal}{GenerateTerrain()} will be responsible for deciding how each tile 		should be rendered based off the heightmap, alongside generating trees on the passed-in \mintinline{pascal}{MapData()} record.
+	Very importantly, we'll also need our terrain generation procedures - \mintinline{pascal}{DiamondSquare()} \& \mintinline{pascal}{GenerateTerrain()}. \mintinline{pascal}{DiamondSquare()} will be responsible for creating a new heightmap for a passed-in \mintinline{pascal}{MapData()} record, whereas \mintinline{pascal}{GenerateTerrain()} will be responsible for deciding how each tile should be rendered based off the heightmap, alongside generating trees on the passed-in \mintinline{pascal}{MapData()} record.
 \item
-	Now that our terrain generation functions and structures are defined, we'll also need a \mintinline{pascal}{CreateMap()} function to call both of the above procedures and then to search for an 	appropriate place on the map to spawn the player.
+	Now that our terrain generation functions and structures are defined, we'll also need a \mintinline{pascal}{CreateMap()} function to call both of the above procedures and then to search for an appropriate place on the map to spawn the player.
 \item
-	Finally, we'll need both a \mintinline{pascal}{HandleInput()} procedure and a \mintinline{pascal}{DrawMap()} procedure to move the player around while detecting collision tiles and to draw the 	tile grid to the screen respectively.
+	Finally, we'll need both a \mintinline{pascal}{HandleInput()} procedure and a \mintinline{pascal}{DrawMap()} procedure to move the player around while detecting collision tiles and to draw the tile grid to the screen respectively.
+	
 \end{itemize}
 
-There will also be several functions and resources referenced later on that we won't be building as they aren't directly related to procedural generation and are just utilities for allowing our map to render properly. These can be downloaded from 
+There will also be several functions and resources referenced later on that we won't be building as they aren't directly related to procedural generation and are just utilities for allowing our map to render properly. This code sits in the \mintinline{pascal}{MapUtils.pas} file and can be downloaded from \href{https://github.com/jacobmilligan/intro_hd_report}{github}, as part of the source for the finished project, alongside the bitmap resources we'll be using (if you don't have git installed just click the 'clone or download' link and download as a zip file). These extra files are important for loading bitmaps, updating the camera position relative to the edge of the map, and drawing a map overview to the screen.
 
-	
+
+\section{Implementing Terrain Generation}
+
+\subsection{Generating a Heightmap}
+
+\paragraph{We need to implement Diamond-Square before we can do any other terrain generation.}\mbox{}
+First, download and install the \href{http://www.freepascal.org/download.var}{latest version of FPC} (Free Pascal Compiler) and a Pascal SwinGame template from the \href{http://swingame.com/index.php/downloads.html}{SwinGame Website}. Once this is complete, copy your downloaded SwinGame template to wherever you normally store your code (on my Mac it sits in \mintinline{bash}{/Users/Jacob/Dev/Repos/} - all our coding will take place in the \mintinline{bash}{/src/} folder and whenever you need to build and run the game, type the command \mintinline{bash}{./build.sh && ./run.sh} (drop the \mintinline{bash}{./} on Windows machines). Rename the \mintinline{pascal}{GameMain.pas} file to something a bit more descriptive, such as \mintinline{pascal}{ProceduralGeneration.pas} and open it up in your favourite text editor. 
+
+
 	
 \printbibliography
 	

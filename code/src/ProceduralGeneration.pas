@@ -221,7 +221,7 @@ begin
 	repeat
 		ProcessEvents();
 
-		ClearScreen(ColorWhite);
+		ClearScreen(ColorBlack);
 		
 		// Only moves the player at specific intervals so as to
 		// limit from running super fast
