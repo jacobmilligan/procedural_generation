@@ -119,13 +119,10 @@ implementation
 			midpointVal := 0;
 
 			//
-			// Diamond step.
-			// Check surrounding points in a diamond around a given midpoint, i.e.:
-			//  	  x
-			//  	x o x
-			//   	  x
-			// The circle represents the midpoint. Checks if they're within the bounds
-			// of the map
+			// Square step - from the midpoint of the previous square
+			// sum the values of the corners, calculate their average
+			// and add a random value less than the max elevation
+			// to the total result to give the midpoint square an elevation.
 			//
 			x := nextStep;
 			while x < Length(map.tiles) do
@@ -136,9 +133,8 @@ implementation
 				begin
 
 					//
-					// Sum the surrounding points equidistant from the current
-					// midpoint, checking in a diamond shape, then calculating their
-					// average and adding a random amount less than the max elevation
+					// Sum surrounding points equidistant from the midpoint
+					// in a square shape
 					//
 					midpointVal := map.tiles[x - nextStep, y - nextStep].elevation
 								 + map.tiles[x - nextStep, y + nextStep].elevation
@@ -154,11 +150,15 @@ implementation
 				y := 0;
 			end;
 
+			
 			//
-			// Square step - from the midpoint of the previous square
-			// sum the values of the corners, calculate their average
-			// and add a random value less than the max elevation
-			// to the total result to give the midpoint square an elevation.
+			// Diamond step.
+			// Check surrounding points in a diamond around a given midpoint, i.e.:
+			//  	  x
+			//  	x o x
+			//   	  x
+			// The circle represents the midpoint. Checks if they're within the bounds
+			// of the map
 			//
 			x := 0;
 			while x < Length(map.tiles) do
@@ -171,9 +171,12 @@ implementation
 					cornerCount := 0;
 
 					//
-					// Sum surrounding points equidistant from the midpoint
-					// in a square shape only if they're within the bounds
-					// of the map.
+					// Sum the surrounding points equidistant from the current
+					// midpoint, checking in a diamond shape, then calculating their
+					// average and adding a random amount.
+					//
+					// Ensures that the corner checking is within the bounds
+					// of the map
 					//
 					if ( y - nextStep >= 0 ) then
 					begin

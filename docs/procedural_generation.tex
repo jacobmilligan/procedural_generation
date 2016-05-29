@@ -8,6 +8,11 @@
 \usepackage{float}
 \usepackage{minted}
 \usepackage{algorithm}
+\usepackage{setspace}
+\usepackage{etoolbox}
+\usepackage{mathtools}
+
+
 \usepackage{algpseudocode}
 
 
@@ -18,6 +23,9 @@
 
 \setlength\parindent{0pt}
 \setlength\parskip{0.5em}
+
+\BeforeBeginEnvironment{minted}{\bigskip}
+\AfterEndEnvironment{minted}{\bigskip}
 
 \hypersetup{
 	colorlinks = true,
@@ -42,7 +50,7 @@
 
 Very broadly speaking, in game development there are two primary ways to generate content for a project. The most common and controllable way is to make each part by hand - in our case we'll be referring to a 2D tile map as our content.
 		
-For small maps this isn't a problem; it's very straight-forward to declare each tile as an element of a statically-sized 2D array (we'll go into how this is done later) and just draw those tiles 	to the screen, perhaps also drawing different sprites on top of each tile for NPC's or the player. But what happens as our map grows in size? As it goes from a 32 x 32 map to a 256 x 256 sized map, or even larger? Even if we've created a system for writing our maps out as text files to be read in, already saving lots of time, this can very quickly become time-consuming. This is a valid way of generating content, in fact the developers on CD Projekt Red's The Witcher 3: Wild Hunt did just that \parencite{witcher}, a pretty amazing feat. However, we don't have the resources or manpower of CD Projekt Red, so what's the solution?
+For small maps this isn't a problem; it's very straight-forward to declare each tile as an element of a statically-sized 2D array (we'll go into how this is done later) and just draw those tiles 	to the screen, perhaps also drawing different sprites on top of each tile for NPC's or the player. But what happens as our map grows in size? As it goes from a $32 \times 32$ map to a $256 \times 256$ sized map, or even larger? Even if we've created a system for writing our maps out as text files to be read in, already saving lots of time, this can very quickly become time-consuming. This is a valid way of generating content, in fact the developers on CD Projekt Red's The Witcher 3: Wild Hunt did just that \parencite{witcher}, a pretty amazing feat. However, we don't have the resources or manpower of CD Projekt Red, so what's the solution?
 		
 \paragraph{Procedural Generation algorithms are the solution}\mbox{}
 		
@@ -50,7 +58,7 @@ Games such as Minecraft, Dwarf Fortress, and the upcoming No Mans Sky all make u
 		
 \paragraph{"So then where do we start?"}
 		
-Good question. Many games, such as in indie title Dwarf Corp. \parencite{dwarfcorp}, begin by simulating tectonic plate activity, erosion, and river formation to carve out their terrain -  in a similar process to how terrain forms in the real world \parencite[pp. 46]{huggett}. However, we're going to go a different route and start by generating a realistic height map, a 2D array of elements that hold a generated elevation value, that we'll use to base the rest of our map off. We will use this starting point to procedurally generate a map that can be navigated by the player. Along the way, we will make heavy use of the SwinGame API to handle all graphics-related functionality and briefly touch on other concepts such as basic collision detection, all of which we will code using Pascal.
+Good question. Many games, such as in indie title Dwarf Corp. \parencite{dwarfcorp}, begin by simulating tectonic plate activity, erosion, and river formation to carve out their terrain -  in a similar process to how terrain forms in the real world \parencite[pp. 46]{huggett}. However, we're going to go a different route and start by generating a realistic height map, a 2D array of elements that hold a generated elevation value, that we'll use to base the rest of our map off. We will use this starting point to procedurally generate a $512 \times 512$ sized map that can be navigated by the player. Along the way, we will make heavy use of the SwinGame API to handle all graphics-related functionality and briefly touch on other concepts such as basic collision detection, all of which we will code using Pascal.
 	
 	
 \subsection{Diamonds \& Squares}
@@ -88,12 +96,13 @@ This process can be best visualized using graphs, seen in the example pictured b
 	\centering
 	\includegraphics[width=0.9\linewidth,trim=4 4 4 4,clip]{diamondsquare.jpg}
 	\renewcommand{\figurename}{Example}
-	\caption{Summary of the Diamond-Square algorithm}
+	\caption{Summary of the Diamond-Square algorithm}\label{fig:graph}
 \end{figure}
 	
 \paragraph{Using this algorithm, we now have the ability to generate a starting point.}
 However, before starting on an implementation, as with all software development, it's a good idea to define the requirements for our program - what functions, procedures, data structures, and features do we want to include?
-	
+
+We'll need the following data structures, functions, and procedures:
 \begin{itemize}
 
 \item
@@ -110,14 +119,14 @@ However, before starting on an implementation, as with all software development,
 There will also be several functions and resources referenced later on that we won't be building as they aren't directly related to procedural generation and are just utilities for allowing our map to render properly. This code sits in the \mintinline{pascal}{MapUtils.pas} file and can be downloaded from \href{https://github.com/jacobmilligan/intro_hd_report}{github}, as part of the source for the finished project, alongside the bitmap resources we'll be using (if you don't have git installed just click the 'clone or download' link and download as a zip file). These extra files are important for loading bitmaps, updating the camera position relative to the edge of the map, and drawing a map overview to the screen.
 
 
-\section{Implementing Terrain Generation}
+\section{Coding Terrain Generation}
 
 \subsection{Setting Up}
 
 \paragraph{We need to implement Diamond-Square before we can do any other terrain generation.}\mbox{}
 First, download and install the \href{http://www.freepascal.org/download.var}{latest version of FPC} (Free Pascal Compiler) and a Pascal SwinGame template from the \href{http://swingame.com/index.php/downloads.html}{SwinGame Website}. Once this is complete, copy your downloaded SwinGame template to wherever you normally store your code (on my Mac it sits in \mintinline{bash}{/Users/Jacob/Dev/Repos/} - all our coding will take place in the \mintinline{bash}{/src/} folder and whenever you need to build and run the game, type the command \mintinline{bash}{./build.sh && ./run.sh} (drop the \mintinline{bash}{./} on Windows machines). Rename the \mintinline{pascal}{GameMain.pas} file to something a bit more descriptive, such as \mintinline{pascal}{ProceduralGeneration.pas} and open it up in your favourite text editor.
 
-\paragraph{The first thing we need to do is to replace the code in the stock \mintinline{pascal}{Main()} procedure with the following:}\mbox{}
+The first thing we need to do is to replace the code in the stock \mintinline{pascal}{Main()} procedure with the following:
 
 \begin{minted}[bgcolor=darkgray,style=native]{pascal}
 procedure Main();
@@ -135,84 +144,47 @@ Before we render anything to a graphics window, we should first implement our al
 
 Next, create a new file in the \mintinline{bash}{/src/} directory called \mintinline{pascal}{Terrain.pas}, open it up and write a new Unit file skeleton:
 
-\begin{minted}[bgcolor=darkgray,style=native,tabsize=2]{pascal}
+\begin{minted}[breaklines,bgcolor=darkgray,style=native,tabsize=2]{pascal}
 unit Terrain;
 
 interface
 	uses SwinGame;
 
 	type
-
-		//
-		//	Valid tile types for building maps with.
-		//	Used as a terrain flag for different logic.
-		//
+		// Valid tile types for building maps with. Used as a terrain flag for different logic.
 		TileType = (Water, Sand, Dirt, Grass, MediumGrass, HighGrass, SnowyGrass, Mountain);
 
-		//
-		//	Represents a feature on top of a tile that can have a bitmap,
-		//	collision, and be interactive
-		//
+		// Represents a feature on top of a tile that can have a bitmap, collision, and be interactive
 		FeatureType = (NoFeature, Tree);
 
-		//
-		//	Represents a tile on the map - has a terrain flag,
-		//	elevation and bitmap
-		//
+		// Represents a tile on the map - has a terrain flag, elevation and bitmap
 		Tile = record
-			// terrain type
-			flag: TileType;
-
-			// type of feature if any
-			feature: FeatureType;
-
-			// uses collision detection
-			collidable: Boolean;
-
-			//
-			//	Represents the tiles elevation - zero represents sea
-			//	level.
-			//
-			elevation: Integer;
-
-			// tiles base bitmap
-			bmp: Bitmap;
-
+			flag: TileType; // Terrain type
+			feature: FeatureType; // Type of feature if any
+			collidable: Boolean; // Tile uses collision detection
+			elevation: Integer; // The tiles elevation - zero represents sealevel.
+			bmp: Bitmap; // Tiles base bitmap
+			featureBmp: Bitmap; // If has feature, its bitmap
 			hasBmp: Boolean;
-
-			// bitmap for whatever feature is on top of the tiles
-			featureBmp: Bitmap;
 		end;
 
-		//
-		//	Array used to hold a tilemap
-		//
+		// Array used to hold a tilemap
 		TileGrid = array of array of Tile;
 
-		//
-		//	Main representation of the current map. Holds a tile grid, alongside
-		//	data related to size, smoothness, seed values.
-		//
+		// Main representation of the current map. Holds a tile grid, alongside data related to size, smoothness, seed values.
 		MapData = record
-			tiles: TileGrid;
+			tiles: TileGrid; // All of the tiles on a map
 			player: Sprite;
-			playerX, playerY: Integer;
-			size, seed, tilesize, playerIndicator: Integer;
+			playerX, playerY: Integer; // Tile-based coordinates
+			size, seed, tilesize, playerIndicator: Integer; // Map settings
 		end;
 
-	//
-	//	Fills a MapData's TileGrid with generated heightmap data
-	//	using the Diamond-Square fractal generation algorithm
-	//	This heightmap data gets used later on to generate terrain realistically
-	//
+	// Fills a MapData's TileGrid with generated heightmap data using the Diamond-Square fractal generation algorithm
+	// This heightmap data gets used later on to generate terrain realistically
 	procedure DiamondSquare(var map: MapData; maxHeight, smoothness: Integer);
 
-	//
-	//	Uses elevation values generated by DiamondSquare to assign appropriate
-	//	bitmaps and randomly generate trees
-	//
+	// Uses elevation values generated by DiamondSquare to assign appropriate bitmaps and randomly generate trees
 	procedure GenerateTerrain(var map: MapData);
-
 
 implementation
 
@@ -226,13 +198,10 @@ implementation
 		//code
 	end;
 
-
 end.
 \end{minted}
 
-That's a lot of code, so let's step through it.
-
-\vspace{1mm}
+\paragraph{That's a lot of code, so let's step through it.}\mbox{}
 
 \begin{minted}[bgcolor=darkgray,style=native,tabsize=2]{pascal}
 unit Terrain;
@@ -320,11 +289,7 @@ end;
 
 \paragraph{Here, we declare our most important records and types.} The \mintinline{pascal}{Tile record} is what represents a single element of our tile grid and contains a \mintinline{pascal}{TileType} \mintinline{pascal}{flag}, a \mintinline{pascal}{FeatureType}, a \mintinline{pascal}{Boolean} variable, \mintinline{pascal}{collidable} to communicate that the particular tile is subject to collision detection, the \mintinline{pascal}{elevation Integer} value, its attached base tile \mintinline{pascal}{Bitmap} and its feature \mintinline{pascal}{Bitmap} (in this case either a Tree or an invisible bitmap) to render alongside a \mintinline{pascal}{hasBmp Boolean} value used to stop our drawing procedures from trying to draw a non-existent bitmap. We've also declared a new \mintinline{pascal}{open array of dynamic Tile arrays} to function as our tile grid. As 2D arrays are essentially just an array in which each of its elements is just another array of elements of a specified type, we've used the syntax \mintinline{pascal}{array of array of Tile} to declare this type.
 
-\paragraph{Finally, we declare our \mintinline{pascal}{MapData} type.} This \mintinline{pascal}{record} will hold our tile grid, the players \mintinline{pascal}{Sprite} variable (A SwinGame library data type), the size of the map, the size of each tile, it's seed or starting value, and an indicator used by the \mintinline{pascal}{MapUtils.pas DrawMapCartography() procedure} to locate where the player is relative to the drawn tile map. Important to note is the \mintinline{pascal}{playerX} \& \mintinline{pascal}{playerY} variables as these aren't the players position in pixel coordinates (there will be a total of 275952697344 pixels on the final map, way too large a number to even fit in a \mintinline{pascal}{LongWord} type), they are the players current pixel position translated to 2D array index equivalents - these variables will be used to calculate simple collision detection later on.
-
-\vspace{1mm}
-
-Finally, we forward declare our two terrain generation procedures:
+\paragraph{Finally, we declare our \mintinline{pascal}{MapData} type.} This \mintinline{pascal}{record} will hold our tile grid, the players \mintinline{pascal}{Sprite} variable (A SwinGame library data type), the size of the map, the size of each tile, it's seed or starting value, and an indicator used by the \mintinline{pascal}{MapUtils.pas DrawMapCartography() procedure} to locate where the player is relative to the drawn tile map. Important to note is the \mintinline{pascal}{playerX} \& \mintinline{pascal}{playerY} variables as these aren't the players position in pixel coordinates (there will be a total of $275952697344$ pixels on the final map, way too large a number to even fit in a \mintinline{pascal}{LongWord} type), they are the players current pixel position translated to 2D array index equivalents - these variables will be used to calculate simple collision detection later on. Lastly, we forward declare our two terrain generation procedures.
 
 \begin{minted}[bgcolor=darkgray,style=native,tabsize=2]{pascal}
 //
@@ -341,28 +306,45 @@ procedure DiamondSquare(var map: MapData; maxHeight, smoothness: Integer);
 procedure GenerateTerrain(var map: MapData);
 \end{minted}
 
-\subsection{Implementing Terrain Generation}
+
+\pagebreak
+
+
+\subsection{Implementing Diamond-Square}
 
 \paragraph{Moving onto the \mintinline{pascal}{implementation} section, we can now build our terrain generation algorithms.} Starting with \mintinline{pascal}{DiamondSquare}. The basic pseudocode for the algorithm looks something like this:
 
-\begin{algorithm}
+\begin{algorithm}[H]
+\setstretch{1.35}
 \caption{The Diamond-Square algorithm}
-
 \begin{algorithmic}
 \Procedure{DiamondSquare}{$map,\ maxHeight,\ smoothness$}
 	\State Initialize the four corners of the map with a seed value
-	\State $midPoint \gets$ Average of the four corners $+ \ Random(1000)$
-	\State $nextStep \gets Length(tileGrid) \div 2$
+	\State $nextStep \gets \frac{Length(tileGrid)}{2}$
 	
 	\While{$nextStep > 0$}
-		
+		\ForAll{$midPoints$ of each square in the grid}  \Comment{Do square step}
+			\State $midPoint \gets$ Average four corners $+ \ (Random(maxHeight) \times smoothness)$
+		\EndFor
+		\ForAll{Diamonds in the map} \Comment{We now have diamonds, do diamond step}
+			\ForAll{$point$ in a diamond}
+				\State $pointCount \gets 0$
+				\If{Within boundaries of the tile grid}
+					\State $midPoint \gets midPoint \ + \ point$
+					\State $pointCount\gets pointCount+1$
+				\EndIf
+			\EndFor
+			\State $midPoint \gets \frac{midPoint}{pointCount} + (Random(maxHeight) \times smoothness$)
+		\EndFor
+		\State $nextStep \gets \frac{nextStep}{2}$ \Comment{Smaller diamonds and squares}
+		\State $smoothness \gets \frac{smoothness}{2}$ \Comment{Higher elevations have less radical difference in height}
 	\EndWhile
 	
 \EndProcedure	
 \end{algorithmic}
 \end{algorithm}
 
-
+When broken down like this, the process becomes a lot simpler and we have a good abstraction to reference when implementing the algorithm, so let's start on building it into our source code.
 
 \begin{minted}[bgcolor=darkgray,style=native,tabsize=2]{pascal}
 implementation
@@ -383,7 +365,7 @@ implementation
 		map.tiles[x, y].elevation := -1500;
 \end{minted}
 
-Initially, we declare the x \& y variables to track our iterations through the heightmap generation process, then the \mintinline{pascal}{midpointVal Double} which we will use to calculate the current midpoint value (average plus a random value) at both the diamond and square steps. The \mintinline{pascal}{nextStep} variable is an important one and will control which tile in the grid we're analysing at any given moment and will be made smaller at each iteration until it equals 0, at which point the algorithm is finished. This is set to the centre point of the tile grid and at each iteration will be used to determine the location of a midpoint. Finally, we 'seed' the top-left corner of the map with an elevation of -1500 to ensure that the map will always have some ocean as its starting point which will help achieve our goal of producing a continent-like map.
+Initially, we declare the x \& y variables to track our iterations through the heightmap generation process, then the \mintinline{pascal}{midpointVal Double} which we will use to calculate the current midpoint value (average plus a random value) at both the diamond and square steps. The \mintinline{pascal}{nextStep} variable is an important one and will control which tile in the grid we're analysing at any given moment and will be made smaller at each iteration until it equals 0, at which point the algorithm is finished. This is set to the centre point of the tile grid and at each iteration will be used to determine the location of a midpoint. Finally, we 'seed' the top-left corner of the map with an elevation of $-1500$ to ensure that the map will always have some ocean as its starting point which will help achieve our goal of producing a continent-like map.
 
 \begin{minted}[bgcolor=darkgray,style=native,tabsize=2]{pascal}
 // Initialize four corners of map with the same value as above
@@ -398,10 +380,160 @@ begin
 	x += 2 * nextStep;
 	y := 0;
 end;
+\end{minted}
 
+We then iterate all four corners of the map, stepping the entire length of the map at a time, and assign each corner the same elevation value as the top-left corner. Something that you may notice is that we aren't using the more obvious \mintinline{pascal}{for..do loop} to iterate the 2D tile grid. This is due to a quirk that's relatively unique to Pascal and some Pascal-derived languages in that a \mintinline{pascal}{for..do loop} can only increment the control variable by $1$ at a time, yet we need to increment $2 \cdot nextStep$ (currently half the size of the map) at each iteration to get to the next corner of the map, therefore we'll be using \mintinline{pascal}{while..do loops}.
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2]{pascal}
 x := 0;
 y := 0;
+
+while nextStep > 0 do
+begin
+	midpointVal := 0;
 \end{minted}
+
+Here begins the core of the generation process, essentially we want to continue to iterate the process into smaller and smaller sizes until \mintinline{pascal}{nextStep} is smaller than the size of the tile grid. Inside this loop we start with the \textbf{square step}:
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
+x := nextStep;
+while x < Length(map.tiles) do
+begin
+
+	y := nextStep;
+	while y < Length(map.tiles) do
+	begin
+
+		//
+		// Sum surrounding points equidistant from the midpoint
+		// in a square shape
+		//
+		midpointVal := map.tiles[x - nextStep, y - nextStep].elevation
+					 + map.tiles[x - nextStep, y + nextStep].elevation
+					 + map.tiles[x + nextStep, y - nextStep].elevation
+					 + map.tiles[x + nextStep, y + nextStep].elevation;
+
+		// Set midpoint to the average + Random value and multiply by smoothing factor
+		map.tiles[x, y].elevation := Round( (midpointVal / 4) + (Random(maxHeight) * smoothness) );
+		y += 2 * nextStep;
+	end;
+
+	x += 2 * nextStep;
+	y := 0;
+end;
+\end{minted}
+
+Here, we're scanning the tile grid for squares and their corners of the current iteration size, as in \hyperref[fig:graph]{Example 2, step 5}. \mintinline{pascal}{midpointVal} is assigned the sum of the four corners in a square surrounding the current midpoint, \mintinline{pascal}{map.tiles[x, y]}, then we assign the midpoints elevation the average of the points plus a random value with a maximum possible height of our passed-in \mintinline{pascal}{maxHeight} variable. Each time we do this part of the step, also seen in the diamond step, we ensure to multiply the random value by the passed-in smoothness value to allow the terrain to smooth out as the elevations become higher and the calculated map spaces become smaller. \textbf{Very importantly, because we aren't using \mintinline{pascal}{for..do loops}, note that we're manually resetting both \mintinline{pascal}{x} \& \mintinline{pascal}{y}}, don't forget to do this before each iteration. Let's move onto the diamond step.
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
+//
+// Diamond step.
+// Check surrounding points in a diamond around a given midpoint. Checks if they're within the bounds
+// of the map
+//
+x := 0;
+while x < Length(map.tiles) do
+begin
+
+	y := nextStep * ( 1 - Round(x / nextStep) mod 2);
+	while y < Length(map.tiles) do
+	begin
+		midpointVal := 0;
+		cornerCount := 0;
+
+		// Sum the surrounding points equidistant from the current midpoint, checking in a diamond shape, then calculating their
+		// average and adding a random amount. Ensures that the corner checking is within the bounds of the map
+		if ( y - nextStep >= 0 ) then
+		begin
+			midpointVal += map.tiles[x, y - nextStep].elevation;
+			cornerCount += 1;
+		end;
+		if ( x + nextStep < Length(map.tiles) ) then
+		begin
+			midpointVal += map.tiles[x + nextStep, y].elevation;
+			cornerCount += 1;
+		end;
+		if ( y + nextStep < Length(map.tiles) ) then
+		begin
+			midpointVal += map.tiles[x, y + nextStep].elevation;
+			cornerCount += 1;
+		end;
+		if ( x - nextStep >= 0 ) then
+		begin
+			midpointVal += map.tiles[x - nextStep, y].elevation;
+			cornerCount += 1;
+		end;
+
+		//
+		// If at least one corner is within the map bounds, calculate average plus
+		// a random amount less than the map size.
+		//
+		if cornerCount > 0 then
+		begin
+			// Set midpoint to the average of corner amt + Random value and multiply by smoothing factor
+			map.tiles[x, y].elevation := Round( (midpointVal / cornerCount) + Random(maxHeight) * smoothness );
+		end;
+
+		y += 2 * nextStep;
+	end;
+
+	x += nextStep;
+end;
+\end{minted}
+
+\paragraph{The diamond step is a little more complicated.} The only reason for this is that we need to do a bit more checking to ensure that a given point in the diamond is within the map boundary to avoid both calculation errors and a \mintinline{pascal}{EAccessViolation} error for accessing a non-existent memory address.
+
+Once again we have two, nested \mintinline{pascal}{while..do loops}. Before entering each inner loop, \mintinline{pascal}{y} is assigned a new value which will be equal to the next point in the diamond. Why is this the case? Well, given the formula, where $s=$ \mintinline{pascal}{nextStep}:
+
+\begin{equation}
+y=s \cdot (1 - \left[\frac{x}{s} \ mod \ 2\right]
+\end{equation}
+
+If we were to plug in $x=0$ \& $s=3$ which is where $x$ will start at the beginning of the diamond step and what \mintinline{pascal}{nextStep} will be set to in the first iteration of a $5 \times 5$ grid, we would get:
+
+\begin{equation}
+\begin{split}
+y&=3 \cdot (1 - \left[\frac{0}{3} \ mod \ 2\right]) \\
+&=3 \cdot (1 - \left[0 \ mod \ 2\right]) \\
+&=3 \cdot (1 - [0]) \\
+&=3
+\end{split}
+\end{equation}
+
+\mintinline{pascal}{y} is now the right point of the diamond, then, given \mintinline{pascal}{x += nextStep} in the next iteration, \mintinline{pascal}{x} will now be $3$, so if we plug that into the formula again, we get:
+
+\begin{equation}
+\begin{split}
+y&=3 \cdot (1 - \left[\frac{3}{3} \ mod \ 2\right]) \\
+&=3 \cdot (1 - \left[1 \ mod \ 2\right]) \\
+&=3 \cdot (1 - [1]) \\
+&=3 \cdot 0 \\
+&=0
+\end{split}
+\end{equation}
+
+So now \mintinline{pascal}{y} is set to the top point of the diamond and so on. This simple formula allows us to iterate four points of a diamond without having to resort to using \mintinline{pascal}{if} statements.
+
+In the body of the inner loop, we then check each point surrounding the mid-point to see if it's inside the bounds of the map. If it is, we increment \mintinline{pascal}{cornerCount} once. Then, after checking all points we assign the mid-point the average of all surrounding points within the bounds of the map plus a random value limited to our \mintinline{pascal}{maxHeight} variable multiplied by the current smoothness factor. Finally, we increase the value of \mintinline{pascal}{y} in the inner loop by the length of the current diamond to get the lower point and iterate until all diamonds in the current loop are calculated.
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
+		nextStep := Round(nextStep / 2); // Make the next space smaller
+
+		//
+		//	Increase smoothness for every iteration, allowing
+		//	less difference in height the more iterations that are completed
+		//
+		smoothness := Round(smoothness / 2);
+	end;
+end;
+\end{minted}
+
+\paragraph{We're almost done.} At the end of the current diamond-square iteration, we make the size of our diamonds and squares smaller by halving \mintinline{pascal}{nextStep} alongside halving \mintinline{pascal}{smoothness} so that higher elevations have a less radical difference in height. Changing our smoothness value is what creates a realistic gradient in heights and a more visually pleasing result.
+
+\subsection{Testing}
+
+\paragraph{The most complex and difficult part is out of the way.} But before we do anything else, we need to test it. If we were to wait until we had all of our drawing, collision, and update functions coded up, we'd be well into finishing our program before we've even made sure the core algorithm behind it even works! To do this, we can go back to our main program file, \mintinline{pascal}{ProceduralGeneration.pas}, and implement the \mintinline{pascal}{PrintMapToConsole() procedure} we wrote in \mintinline{pascal}{Main()}. 
+
 
 \printbibliography
 	
