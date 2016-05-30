@@ -153,7 +153,7 @@ Before we render anything to a graphics window, we should first implement our al
 Next, create a new file in the \mintinline{bash}{/src/} directory called \mintinline{pascal}{Terrain.pas}, open it up and write a new Unit file skeleton:
 
 \begin{mdframed}[topline=false,bottomline=false,backgroundcolor=darkgray]
-\begin{minted}[breaklines,style=native,tabsize=2,frame=lines]{pascal}
+\begin{minted}[style=native,tabsize=2,breaklines]{pascal}
 unit Terrain;
 
 interface
@@ -635,8 +635,229 @@ It works! It may look fairly unimpressive now but at least we can verify that ou
 
 \subsection{Generating Terrain and Features}
 
-\paragraph{?}
+\paragraph{In order to graphically represent terrain, we need to assign Bitmaps and \mintinline[breaklines]{pascal}{FeatureTypes}.} This will be defined in our \mintinline[breaklines]{pascal}{GenerateTerrain() procedure}. This step in terrain generation is less complex than \mintinline[breaklines]{pascal}{DiamondSquare()} \emph{at the present}; it's possible, and encouraged, to extend this this procedure after finishing the program and, for many procedurally generated games, \mintinline[breaklines]{pascal}{DiamondSquare()} is just the beginning and their most complex algorithms belong in the terrain generation procedures and functions. However, our focus is on generating a base world to get started with procedural generation, but if you are interested I would recommend visiting the Procedural Content Generation Wiki \parencite{pcg} and browsing the many articles listed there.
 
+Before we dive into coding our \mintinline[breaklines]{pascal}{GenerateTerrain() procedure} lets outline exactly how we want it to work by using abstraction through pseudocode.
+
+\begin{algorithm}[H]
+\setstretch{1.35}
+\caption{Procedure to Generate Terrain}
+\begin{algorithmic}
+\Procedure{GenerateTerrain}{$map$}
+	\For{$x \gets 0$ \ To \ $High(tiles)$} \Comment{Generate tile Bitmaps}
+		\For{$y \gets 0$ \ To \ $High(tiles)$}
+			\State Assign a different Bitmap to $tiles[x, y]$ for different $elevation$ ranges
+			\If{$tiles[x,y]$ $elevation$ value is $< 0$}
+				\State $tiles[x, y] \gets$ Dark Water Bitmap
+			\Else
+				\State $tiles[x, y] \gets$ Mountain Bitmap \Comment{$elevation > 1499$}
+			\EndIf
+			
+			\If{$Random() > 0.9$ \textbf{and} $tiles[x,y]$ is not a Water tile}
+				\State $tiles[x, y]'s \ FeatureType \gets$ A tree appropriate for the current tile type
+			\EndIf
+		\EndFor
+	\EndFor
+\EndProcedure	
+\end{algorithmic}
+\end{algorithm}
+
+Essentially all we need to do is iterate over our entire 2D heightmap and assign each tile a Bitmap based on its elevation value. At certain elevations we may choose to apply different processes later on, but all we're doing at the moment is assigning the right tile Bitmap to the right elevation value. The second part of the process is generating appropriate tree Bitmaps based on a very random process; it's highly encouraged to extend this and explore forest generation algorithms that work by creating seeds, sunlight, and maturation processes (see \cite{forests}) but for the moment we're going to apply a process to achieve a semi-procedural result.
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
+// Generates the terrain type for each tile based off its elevation value
+procedure GenerateTerrain(var map: MapData);
+var
+	x, y: Integer;
+begin
+	// Iterate all tiles and change their bitmap and data depending on their
+	// pre-generated altitude
+	for x := 0 to High(map.tiles) do
+	begin
+		for y := 0 to High(map.tiles) do
+		begin
+
+			// Setup the tiles
+			case map.tiles[x, y].elevation of
+				0..199: SetTile(map.tiles[x, y], Water, 'water', true);
+				200..299: SetTile(map.tiles[x, y], Sand, 'sand', false);
+				300..399: SetTile(map.tiles[x, y], Grass, 'grass', false);
+				400..599: SetTile(map.tiles[x, y], MediumGrass, 'dark grass', false);
+				600..799: SetTile(map.tiles[x, y], HighGrass, 'darkest grass', false);
+				800..999: if Random(10) > 6 then
+							// Generate patchy snow at mid-to-high elevations
+							SetTile(map.tiles[x, y], SnowyGrass, 'snowy grass', false)
+						  else
+							SetTile(map.tiles[x, y], HighGrass, 'darkest grass', false);
+				1000..1499: SetTile(map.tiles[x, y], SnowyGrass, 'snowy grass', false);
+\end{minted}
+
+First, we delare our \mintinline[breaklines]{pascal}{GenerateTerrain()} procedure and begin iterating the 2D tile grid. We then define several elevation ranges inside a \mintinline[breaklines]{pascal}{case} statement for which we assign the current tiles Bitmap using \mintinline[breaklines]{pascal}{SetTile()} (which we'll implement soon) - lower elevation get water, while higher elevations get snowy grass. At elevation ranges of $800-999$ we randomly assign either snow or grass to simulate patchy snow as the terrain transitions to higher elevation values.
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
+				else
+					// Only generate dark water if elevation is low enough
+					// otherwise, every other value, which will be higher than 1499, should
+					// become mountains
+					if map.tiles[x, y].elevation  < 0 then
+						SetTile(map.tiles[x, y], Water, 'dark water', true)
+					else
+						SetTile(map.tiles[x, y], Mountain, 'mountain', true)
+			end;
+
+			// Generates trees randomly. Feel free to extend this by making your own
+			// procedural tree generation algorithm to make beautiful forests!
+			if ( Random() > 0.9 ) and ( map.tiles[x, y].flag <> Water ) then
+			begin
+				SetFeature(map.tiles[x, y], Tree, true);
+			end;
+
+		end;
+	end;
+end;
+\end{minted}
+
+If the current tiles elevation value is outside the specified ranges we fall to the \mintinline[breaklines]{pascal}{else} block and assign elevations lower than $0$ deep water tiles, otherwise anything not less than $0$ must be higher than $1499$ so we assign it a mountain tile. Finally, we randomly set the tiles \mintinline[breaklines]{pascal}{featureBmp} to either a tree or nothing depending on a random value and as long as the tile isn't water - trees don't generally grow in the ocean.
+
+\paragraph{You will have noticed both \mintinline[breaklines]{pascal}{SetTile()} \& \mintinline[breaklines]{pascal}{SetFeature()} procedures.} These handle assigning default values to tiles and assigning the right tree for the right \mintinline[breaklines]{pascal}{TileType} respectively. Let's quickly code them up:
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
+// Sets a tiles values to specified. Anything with collidable set to true
+// won't be able to be walked over by the player
+procedure SetTile(var newTile: Tile; flag: TileType; bmp: String; collidable: Boolean);
+begin
+	newTile.flag := flag;
+	newTile.bmp := BitmapNamed(bmp);
+	newTile.collidable := collidable;
+	newTile.hasBmp := true;
+end;
+\end{minted}
+
+\mintinline[breaklines]{pascal}{SetTile()} assigns all of the specified values alongside any required default values for a given tile which saves us the hassle of rewriting this code each time we want to setup a tile.
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
+//
+//	Sets up a new feature on a given tile. At the moment we only have trees
+//	as valid features but it's really easy for you to add more features! 
+//	Why not try adding rocks, logs or even treasure?
+//
+procedure SetFeature(var tile: Tile; feature: FeatureType; collidable: Boolean);
+begin
+	tile.feature := feature;
+	tile.collidable := collidable;
+
+	if feature = Tree then
+	begin
+		case tile.flag of
+			Water: tile.featureBmp := BitmapNamed('hidden');
+			Sand: tile.featureBmp := BitmapNamed('palm tree');
+			Dirt: tile.featureBmp := BitmapNamed('tree');
+			Grass: tile.featureBmp := BitmapNamed('tree');
+			MediumGrass: tile.featureBmp := BitmapNamed('pine tree');
+			HighGrass: tile.featureBmp := BitmapNamed('pine tree');
+			SnowyGrass: tile.featureBmp := BitmapNamed('snowy tree');
+			Mountain: tile.featureBmp := BitmapNamed('hidden');
+		end;
+	end;
+end;
+\end{minted}
+
+\mintinline[breaklines]{pascal}{SetFeature()} is fairly self explanatory - it uses a \mintinline[breaklines]{pascal}{case} statement on the passed-in tiles \mintinline[breaklines]{pascal}{TileType} to determine which tree bitmap to load up. Notice, a feature can be collidable (you shouldn't be able to walk through trees) and, using the syntax \mintinline[breaklines]{pascal}{if feature = <FeatureType> then}, we can specify different logic for different types of features, once again future-proofing our program for extensibility.
+
+\paragraph{Return to \mintinline[breaklines]{pascal}{CreateMap()}} and add in a call to \mintinline[breaklines]{pascal}{GenerateTerrain(result)}. If you run the program now, the program won't work. In order to draw the map to the screen, we need to both load our resources up and implement a \mintinline[breaklines]{pascal}{DrawMap()} procedure.
+
+\section{Drawing, Input, and Collision}
+
+\subsection{Drawing the map}
+
+Before we can draw anything to the screen we need to open a SwinGame graphics window and define a main game loop, so let's go to our \mintinline[breaklines]{pascal}{Main()} procedure and edit to look like this:
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
+procedure Main();
+var
+  map: MapData;
+begin
+
+  LoadResources();
+  
+  // Open a SwinGame graphics window for drawing to
+  OpenGraphicsWindow('Procedural Map Generation', 800, 600);
+  
+  map := CreateMap(513, true);
+
+  repeat
+    ProcessEvents();
+
+    ClearScreen(ColorBlack);
+    
+    UpdateCamera(map);
+    DrawMap(map);
+    DrawSprite(map.player);
+
+    RefreshScreen(60);
+  until WindowCloseRequested();
+end;
+\end{minted}
+
+We define our main game loop to \mintinline[breaklines]{pascal}{repeat..until WindowCloseRequested()}, which happens when the user exits the window. Both \mintinline[breaklines]{pascal}{LoadResources()} \& \mintinline[breaklines]{pascal}{UpdateCamera()} are from the \mintinline[breaklines]{pascal}{MapUtils.pas unit} file and do exactly what the say they do, loading resources and making sure the camera is always centered on our player. We call \mintinline[breaklines]{pascal}{DrawMap()} to draw our map to the screen, the procedure we'll be implementing, and the SwinGame API's \mintinline[breaklines]{pascal}{DrawSprite()} procedure to draw the player to the screen. \mintinline[breaklines]{pascal}{ClearScreen()} \& \mintinline[breaklines]{pascal}{RefreshScreen()} are called every iteration alongside \mintinline[breaklines]{pascal}{ProcessEvents()} for input handling.
+
+\paragraph{Before we implement \mintinline[breaklines]{pascal}{DrawMap()}, we need to create a function to check if a particular element is inside the bounds of the tile grid.} \
+
+\begin{mdframed}[backgroundcolor=darkgray]
+\begin{minted}[style=native,tabsize=2,breaklines]{pascal}
+//
+//	Determines whether a given point is inside the tilemap or not
+//
+function IsInMap(constref map: MapData; x, y: Integer): Boolean;
+begin
+	result := false;
+
+	// Check map bounds. As every map is (2^n)+1 in size, the bounds
+	// stop at High()-1 which will be a number equal to 2^n.
+	if (x > 0) and (x < High(map.tiles) - 1) and (y > 0) and (y < High(map.tiles) - 1) then
+	begin
+		result := true;
+	end;
+end;
+\end{minted}
+\end{mdframed}
+
+\paragraph{Once we've implemented \mintinline[breaklines]{pascal}{IsInMap()} we can move onto \mintinline[breaklines]{pascal}{DrawMap()}:} 
+\bigskip
+\begin{mdframed}[backgroundcolor=darkgray]
+\begin{minted}[style=native,tabsize=2,breaklines]{pascal}
+//
+//	Draws the current map data to the screen but only within the bounds of
+//	the current Camera view.
+//
+procedure DrawMap(constref map: MapData);
+var
+	x, y: Integer;
+	newView: TileView;
+begin
+	// Get a new tile view to see what should be drawn
+	newView := CreateTileView(map);
+
+	// Iterate only tiles in the tile map that correspond to a
+	// visible tile 
+	for x := newView.x to newView.right do
+  	begin
+	  	for y := newView.y to newView.bottom do
+	  	begin
+	  		
+	  		if IsInMap(map, x, y) and map.tiles[x, y].hasBmp then
+	  		begin
+	  			// Draw the tile
+	  			DrawBitmap(map.tiles[x, y].bmp, x * map.tilesize, y * map.tilesize);
+	  			// Draw a tree or no feature
+					DrawBitmap(map.tiles[x, y].featureBmp, x * map.tilesize, y * map.tilesize);
+	  		end;
+
+	  	end;
+  	end;
+end;
+\end{minted}
+\end{mdframed}
 
 \printbibliography
 	

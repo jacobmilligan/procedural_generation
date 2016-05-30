@@ -148,7 +148,7 @@ begin
 	  			// Draw the tile
 	  			DrawBitmap(map.tiles[x, y].bmp, x * map.tilesize, y * map.tilesize);
 	  			// Draw a tree or no feature
-				DrawBitmap(map.tiles[x, y].featureBmp, x * map.tilesize, y * map.tilesize);
+					DrawBitmap(map.tiles[x, y].featureBmp, x * map.tilesize, y * map.tilesize);
 	  		end;
 
 	  	end;
@@ -217,7 +217,7 @@ begin
   OpenGraphicsWindow('Procedural Map Generation', 800, 600);
   
 	map := CreateMap(513, true);
-	
+
 	moveDelay := 0;
 	repeat
 		ProcessEvents();
