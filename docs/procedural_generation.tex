@@ -1,5 +1,8 @@
 \documentclass{article}
 
+\usepackage[T1]{fontenc}
+
+
 \usepackage{hyperref}
 \usepackage{graphicx}
 \usepackage[style=authoryear,backend=biber]{biblatex}
@@ -11,10 +14,13 @@
 \usepackage{setspace}
 \usepackage{etoolbox}
 \usepackage{mathtools}
-
-
+\usepackage{sourcecodepro}
 \usepackage{algpseudocode}
+\usepackage{mdframed}
 
+\mdfsetup{skipabove=0pt,skipbelow=0pt}
+
+\spaceskip=1mm
 
 \makeatletter
 \renewcommand{\ALG@name}{Pseudocode}
@@ -24,8 +30,10 @@
 \setlength\parindent{0pt}
 \setlength\parskip{0.5em}
 
-\BeforeBeginEnvironment{minted}{\bigskip}
-\AfterEndEnvironment{minted}{\bigskip}
+\BeforeBeginEnvironment{minted}{\smallskip}
+\AfterEndEnvironment{minted}{\smallskip}
+
+\AtBeginEnvironment{minted}{\setstretch{1.2}}
 
 \hypersetup{
 	colorlinks = true,
@@ -94,7 +102,7 @@ This process can be best visualized using graphs, seen in the example pictured b
 	
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.9\linewidth,trim=4 4 4 4,clip]{diamondsquare.jpg}
+	\includegraphics[width=0.9\linewidth,trim=4 4 4 4,clip]{diamondsquare.eps}
 	\renewcommand{\figurename}{Example}
 	\caption{Summary of the Diamond-Square algorithm}\label{fig:graph}
 \end{figure}
@@ -108,7 +116,7 @@ We'll need the following data structures, functions, and procedures:
 \item
 	First, we will define the data structures that will be required by our program. We're going to first need a \mintinline{pascal}{Tile record} to hold data related to each tile in the map such as if it's collidable, the bitmap that should be drawn for it, it's type, and elevation. We'll also need a \mintinline{pascal}{MapData record} to contain our tile grid, the players sprite and location data, and its size.
 \item
-	Very importantly, we'll also need our terrain generation procedures - \mintinline{pascal}{DiamondSquare()} \& \mintinline{pascal}{GenerateTerrain()}. \mintinline{pascal}{DiamondSquare()} will be responsible for creating a new heightmap for a passed-in \mintinline{pascal}{MapData()} record, whereas \mintinline{pascal}{GenerateTerrain()} will be responsible for deciding how each tile should be rendered based off the heightmap, alongside generating trees on the passed-in \mintinline{pascal}{MapData()} record.
+	Very importantly, we'll also need our terrain generation procedures - \mintinline{pascal}{DiamondSquare()} \& \mintinline[breaklines]{pascal}{GenerateTerrain()}. \mintinline{pascal}{DiamondSquare()} will be responsible for creating a new heightmap for a passed-in \mintinline{pascal}{MapData()} record, whereas \mintinline{pascal}{GenerateTerrain()} will be responsible for deciding how each tile should be rendered based off the heightmap, alongside generating trees on the passed-in \mintinline{pascal}{MapData()} record.
 \item
 	Now that our terrain generation functions and structures are defined, we'll also need a \mintinline{pascal}{CreateMap()} function to call both of the above procedures and then to search for an appropriate place on the map to spawn the player.
 \item
@@ -124,7 +132,7 @@ There will also be several functions and resources referenced later on that we w
 \subsection{Setting Up}
 
 \paragraph{We need to implement Diamond-Square before we can do any other terrain generation.}\mbox{}
-First, download and install the \href{http://www.freepascal.org/download.var}{latest version of FPC} (Free Pascal Compiler) and a Pascal SwinGame template from the \href{http://swingame.com/index.php/downloads.html}{SwinGame Website}. Once this is complete, copy your downloaded SwinGame template to wherever you normally store your code (on my Mac it sits in \mintinline{bash}{/Users/Jacob/Dev/Repos/} - all our coding will take place in the \mintinline{bash}{/src/} folder and whenever you need to build and run the game, type the command \mintinline{bash}{./build.sh && ./run.sh} (drop the \mintinline{bash}{./} on Windows machines). Rename the \mintinline{pascal}{GameMain.pas} file to something a bit more descriptive, such as \mintinline{pascal}{ProceduralGeneration.pas} and open it up in your favourite text editor.
+First, download and install the \href{http://www.freepascal.org/download.var}{latest version of FPC} (Free Pascal Compiler) and a Pascal SwinGame template from the \href{http://swingame.com/index.php/downloads.html}{SwinGame Website}. Once this is complete, copy your downloaded SwinGame template to wherever you normally store your code (on my Mac it sits in \mintinline{bash}{/Users/Jacob/Dev/Repos/} - all our coding will take place in the \mintinline{bash}{/src/} folder and whenever you need to build and run the game, type the command \mintinline{bash}{./build.sh && ./run.sh} (drop the \mintinline{bash}{./} on Windows machines). Rename the \mintinline{pascal}{GameMain.pas} file to something a bit more descriptive, such as \mintinline[breaklines]{pascal}{ProceduralGeneration.pas} and open it up in your favourite text editor.
 
 The first thing we need to do is to replace the code in the stock \mintinline{pascal}{Main()} procedure with the following:
 
@@ -144,7 +152,8 @@ Before we render anything to a graphics window, we should first implement our al
 
 Next, create a new file in the \mintinline{bash}{/src/} directory called \mintinline{pascal}{Terrain.pas}, open it up and write a new Unit file skeleton:
 
-\begin{minted}[breaklines,bgcolor=darkgray,style=native,tabsize=2]{pascal}
+\begin{mdframed}[topline=false,bottomline=false,backgroundcolor=darkgray]
+\begin{minted}[breaklines,style=native,tabsize=2,frame=lines]{pascal}
 unit Terrain;
 
 interface
@@ -185,7 +194,7 @@ interface
 
 	// Uses elevation values generated by DiamondSquare to assign appropriate bitmaps and randomly generate trees
 	procedure GenerateTerrain(var map: MapData);
-
+	
 implementation
 
 	procedure DiamondSquare(var map: MapData; maxHeight, smoothness: Integer);
@@ -200,10 +209,11 @@ implementation
 
 end.
 \end{minted}
+\end{mdframed}
 
 \paragraph{That's a lot of code, so let's step through it.}\mbox{}
 
-\begin{minted}[bgcolor=darkgray,style=native,tabsize=2]{pascal}
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
 unit Terrain;
 
 interface
@@ -289,7 +299,7 @@ end;
 
 \paragraph{Here, we declare our most important records and types.} The \mintinline{pascal}{Tile record} is what represents a single element of our tile grid and contains a \mintinline{pascal}{TileType} \mintinline{pascal}{flag}, a \mintinline{pascal}{FeatureType}, a \mintinline{pascal}{Boolean} variable, \mintinline{pascal}{collidable} to communicate that the particular tile is subject to collision detection, the \mintinline{pascal}{elevation Integer} value, its attached base tile \mintinline{pascal}{Bitmap} and its feature \mintinline{pascal}{Bitmap} (in this case either a Tree or an invisible bitmap) to render alongside a \mintinline{pascal}{hasBmp Boolean} value used to stop our drawing procedures from trying to draw a non-existent bitmap. We've also declared a new \mintinline{pascal}{open array of dynamic Tile arrays} to function as our tile grid. As 2D arrays are essentially just an array in which each of its elements is just another array of elements of a specified type, we've used the syntax \mintinline{pascal}{array of array of Tile} to declare this type.
 
-\paragraph{Finally, we declare our \mintinline{pascal}{MapData} type.} This \mintinline{pascal}{record} will hold our tile grid, the players \mintinline{pascal}{Sprite} variable (A SwinGame library data type), the size of the map, the size of each tile, it's seed or starting value, and an indicator used by the \mintinline{pascal}{MapUtils.pas DrawMapCartography() procedure} to locate where the player is relative to the drawn tile map. Important to note is the \mintinline{pascal}{playerX} \& \mintinline{pascal}{playerY} variables as these aren't the players position in pixel coordinates (there will be a total of $275952697344$ pixels on the final map, way too large a number to even fit in a \mintinline{pascal}{LongWord} type), they are the players current pixel position translated to 2D array index equivalents - these variables will be used to calculate simple collision detection later on. Lastly, we forward declare our two terrain generation procedures.
+\paragraph{Finally, we declare our \mintinline{pascal}{MapData} type.} This \mintinline{pascal}{record} will hold our tile grid, the players \mintinline{pascal}{Sprite} variable (A data type from the SwinGame library), the size of the map, the size of each tile, it's seed or starting value, and an indicator used by the \mintinline{pascal}{MapUtils.pas DrawMapCartography() procedure} to locate where the player is relative to the drawn tile map. Important to note is the \mintinline{pascal}{playerX} \& \mintinline{pascal}{playerY} variables as these aren't the players position in pixel coordinates (there will be a total of $275952697344$ pixels on the final map, way too large a number to even fit in a \mintinline{pascal}{LongWord} type), they are the players current pixel position translated to 2D array index equivalents - these variables will be used to calculate simple collision detection later on. Lastly, we forward declare our two terrain generation procedures.
 
 \begin{minted}[bgcolor=darkgray,style=native,tabsize=2]{pascal}
 //
@@ -423,14 +433,12 @@ begin
 end;
 \end{minted}
 
-Here, we're scanning the tile grid for squares and their corners of the current iteration size, as in \hyperref[fig:graph]{Example 2, step 5}. \mintinline{pascal}{midpointVal} is assigned the sum of the four corners in a square surrounding the current midpoint, \mintinline{pascal}{map.tiles[x, y]}, then we assign the midpoints elevation the average of the points plus a random value with a maximum possible height of our passed-in \mintinline{pascal}{maxHeight} variable. Each time we do this part of the step, also seen in the diamond step, we ensure to multiply the random value by the passed-in smoothness value to allow the terrain to smooth out as the elevations become higher and the calculated map spaces become smaller. \textbf{Very importantly, because we aren't using \mintinline{pascal}{for..do loops}, note that we're manually resetting both \mintinline{pascal}{x} \& \mintinline{pascal}{y}}, don't forget to do this before each iteration. Let's move onto the diamond step.
+Here, we're scanning the tile grid for squares and their corners of the current iteration size, as in \hyperref[fig:graph]{Example 2, step 5}. \mintinline{pascal}{midpointVal} is assigned the sum of the four corners in a square surrounding the current midpoint, \mintinline[breaklines]{pascal}{map.tiles[x, y]}, then we assign the midpoints elevation the average of the points plus a random value with a maximum possible height of our passed-in \mintinline{pascal}{maxHeight} variable. Each time we do this part of the step, also seen in the diamond step, we ensure to multiply the random value by the passed-in smoothness value to allow the terrain to smooth out as the elevations become higher and the calculated map spaces become smaller. \textbf{Very importantly, because we aren't using \ \mintinline{pascal}{for..do loops}, note that we're manually resetting both \mintinline{pascal}{x} \& \mintinline{pascal}{y}}, don't forget to do this before each iteration. Let's move onto the diamond step.
+
+\newgeometry{margin=0.5in}
 
 \begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
-//
-// Diamond step.
-// Check surrounding points in a diamond around a given midpoint. Checks if they're within the bounds
-// of the map
-//
+// Diamond step. Points in a diamond shape around a given midpoint. Checks if they're within the bounds of the map
 x := 0;
 while x < Length(map.tiles) do
 begin
@@ -441,8 +449,7 @@ begin
 		midpointVal := 0;
 		cornerCount := 0;
 
-		// Sum the surrounding points equidistant from the current midpoint, checking in a diamond shape, then calculating their
-		// average and adding a random amount. Ensures that the corner checking is within the bounds of the map
+		// Sum the surrounding points equidistant from the current midpoint in a diamond shape. Ensures that each point is within the bounds of the map
 		if ( y - nextStep >= 0 ) then
 		begin
 			midpointVal += map.tiles[x, y - nextStep].elevation;
@@ -464,10 +471,7 @@ begin
 			cornerCount += 1;
 		end;
 
-		//
-		// If at least one corner is within the map bounds, calculate average plus
-		// a random amount less than the map size.
-		//
+		// If at least one corner is within the map bounds, calculate average plus a random amount less than the map height.
 		if cornerCount > 0 then
 		begin
 			// Set midpoint to the average of corner amt + Random value and multiply by smoothing factor
@@ -480,6 +484,8 @@ begin
 	x += nextStep;
 end;
 \end{minted}
+
+\restoregeometry
 
 \paragraph{The diamond step is a little more complicated.} The only reason for this is that we need to do a bit more checking to ensure that a given point in the diamond is within the map boundary to avoid both calculation errors and a \mintinline{pascal}{EAccessViolation} error for accessing a non-existent memory address.
 
@@ -532,7 +538,104 @@ end;
 
 \subsection{Testing}
 
-\paragraph{The most complex and difficult part is out of the way.} But before we do anything else, we need to test it. If we were to wait until we had all of our drawing, collision, and update functions coded up, we'd be well into finishing our program before we've even made sure the core algorithm behind it even works! To do this, we can go back to our main program file, \mintinline{pascal}{ProceduralGeneration.pas}, and implement the \mintinline{pascal}{PrintMapToConsole() procedure} we wrote in \mintinline{pascal}{Main()}. 
+\paragraph{The most complex and difficult part is out of the way.}But before we do anything else, we need to test it. If we were to wait until we had all of our drawing, collision, and update functions coded up, we'd be well into finishing our program before we've even made sure the core algorithm behind it even works! To do this, we can go back to our main program file, \mintinline{pascal}{ProceduralGeneration.pas}, and implement the \mintinline[breaklines]{pascal}{PrintMapToConsole()} and \mintinline[breaklines]{pascal}{CreateMap()} procedures/functions we wrote in \mintinline{pascal}{Main()}.
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
+// Prints all of the elevation data in a tilemap to the console.
+// Don't use for maps larger than 16 x 16 or it will be bigger than the console window
+procedure PrintMapToConsole(constref map: MapData);
+var
+	x, y: Integer;
+begin
+	for x := 0 to High(map.tiles) do
+  	begin
+  		for y := 0 to High(map.tiles) do
+	  	begin
+  			Write(map.tiles[x, y].elevation, ' ');
+	  	end;
+  		WriteLn();
+	  end;
+end;
+\end{minted}
+
+The code for this function is fairly self-explanatory - we iterate the 2D array and write all \mintinline[breaklines]{pascal}{y} values without appending a newline, then at the end of each \mintinline[breaklines]{pascal}{x} iteration, write a newline to the console to simulate a grid. 
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
+//
+//  Initializes a new tile grid and then generates a new map using DiamondSquare().
+//  The new map can be random or based off a given seed
+//
+function CreateMap(size: Integer; random: Boolean; seed: Integer = 0): MapData;
+var
+  i, j: Integer;
+begin
+  result.tilesize := 32;
+  result.size := size;
+  result.player := CreateSprite('player', BitmapNamed('player')); // We'll use this later
+
+  // Setup seed
+  if random then
+  begin
+    Randomize;
+  end
+  else
+  begin
+    RandSeed := seed;
+  end;
+
+  // Initialize Tile Grid
+  SetGridLength(result.tiles, size);
+  // Generate Heightmap
+  DiamondSquare(result, 100, 20);
+end;
+\end{minted}
+
+\mintinline[breaklines]{pascal}{CreateMap()} takes three parameters - a value to determine the map size, a \mintinline[breaklines]{pascal}{Boolean} variable to determine if we should generate a random map or one from a pre-determined seed value, We first assign a tilesize, size, and sprite for our \mintinline[breaklines]{pascal}{MapData result} variable. Then, if \mintinline[breaklines]{pascal}{random} is true we call the \mintinline[breaklines]{pascal}{Randomize procedure} which initializes Pascals internal random number generator with a new, unique seed to base all random generation off. Much like our \emph{seed} value used to base all of our Diamond-Square calculations off, the Pascal \mintinline[breaklines]{pascal}{Random()} function, a deterministic \emph{pseudo-random} number generation algorithm, itself requires a seed value, generated by the exact time on the computers system clock down to nanoseconds, to base its calculations off. If \mintinline[breaklines]{pascal}{random} is false, we then assign our seed value to the Pascal \mintinline[breaklines]{pascal}{RandSeed} variable, which sets \mintinline[breaklines]{pascal}{Random()}'s seed value manually. We then call \mintinline[breaklines]{pascal}{SetGridLength()} (listed below) to initialize our 2D array and pass our map into \mintinline[breaklines]{pascal}{DiamondSquare()} to get assigned a heightmap.
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
+//	Initializes the 2D map grid with the given size and sets the default 
+//	values for each tile
+procedure SetGridLength(var tiles: TileGrid; size: Integer);
+var
+	column: Integer;
+	x, y: Integer;
+begin
+
+	// Set all of the column sizes to the right length
+	for column := 0 to size do
+	begin
+		SetLength(tiles, column, size);
+	end;
+
+	// Iterate map and setup default values for all tiles
+	for x := 0 to High(tiles) do
+	begin
+		for y := 0 to High(tiles) do
+		begin
+			// Setup default values
+			tiles[x, y].elevation := 0;
+			tiles[x, y].collidable := false;
+			tiles[x, y].feature := NoFeature;
+			tiles[x, y].hasBmp := false;
+		end;
+	end;
+end;
+\end{minted}
+
+Now that we have all of our core procedures and functions defined, we can test out our \mintinline[breaklines]{pascal}{DiamondSquare() procedure} by calling \mintinline[breaklines]{pascal}{CreateMap(9, 100, 20)} from \mintinline[breaklines]{pascal}{Main()}; we want to pass in a very small size value to \mintinline[breaklines]{pascal}{CreateMap()} otherwise we won't be able to see all of the printed elevation numbers in the console. Note that we're passing in a size of $9$ rather than $8$; this is because, as previously discussed, \mintinline[breaklines]{pascal}{DiamondSquare()} only works for sizes equivalent to $2^{n}+1$. Run \mintinline[breaklines]{bash}{./build.sh && ./run.sh} in the console from the root project folder and we can see the result:
+
+\begin{figure}[H]
+	\centering
+	\renewcommand{\figurename}{Example}
+	\includegraphics[width=0.9\linewidth,trim=4 4 4 4,clip]{printtoconsole.png}
+	\caption{The heightmap printed to the console}
+\end{figure}
+
+It works! It may look fairly unimpressive now but at least we can verify that our algorithm works and produces pseudo-random values across a nice, smooth gradient. Let's move onto our \mintinline[breaklines]{pascal}{GenerateTerrain()} procedure to actually begin implementing a graphical representation of our map.
+
+\subsection{Generating Terrain and Features}
+
+\paragraph{?}
 
 
 \printbibliography

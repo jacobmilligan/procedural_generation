@@ -51,6 +51,7 @@ implementation
 		LoadBitmapNamed('palm tree', 'palm_tree.png');
 		LoadBitmapNamed('snowy tree', 'snowy_tree.png');
 		LoadBitmapNamed('player', 'player.png');
+		LoadBitmapNamed('hidden', 'hidden.png');
 	end;
 
 	function CreateTileView(constref map: MapData): TileView;
