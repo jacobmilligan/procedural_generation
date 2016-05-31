@@ -37,36 +37,43 @@
 
 \AtBeginEnvironment{minted}{\setstretch{1.2}}
 
+\definecolor{palegreen}{RGB}{248, 255, 248}
+\definecolor{graymetal}{RGB}{208, 226, 234}
+\definecolor{navyblue}{RGB}{24, 64, 146}
+\definecolor{matteblue}{RGB}{72, 114, 195}
+
 \hypersetup{
 	colorlinks = true,
-	urlcolor   = blue,
-	linkcolor  = blue,
-	citecolor  = darkgray
+	urlcolor   	= matteblue,
+	filecolor 	= navyblue
+	linkcolor	= matteblue,
+	citecolor	= navyblue
 }
 
 \begin{document}
-
 \begin{titlepage}
-
+\pagecolor{palegreen}
 \centering
 \vspace*{0.3cm}
 
 \Huge
-\begin{mdframed}[backgroundcolor=lightgray,linecolor=lightgray]
+\begin{mdframed}[
+	backgroundcolor=graymetal,
+	linecolor=black,
+	rightline=false,
+	leftline=false,
+	linewidth=4pt,
+	innertopmargin=1.75cm,
+	innerbottommargin=1.75cm
+]
 \centering
-\vspace{7mm}
-\rule{\textwidth}{2mm}
 
 \textbf{2D \ \ Procedural \ \ Map \ \ Generation} 
 
-\vspace{3mm}
-
-\rule{\textwidth}{2mm}
 \huge
 \vfill
 \
 \textbf{With Pascal \& SwinGame}
-\vspace{7mm}
 \end{mdframed}
 
 \vfill
@@ -92,10 +99,11 @@ domain=0:1]
 \textbf{Jacob Milligan \\ \small Student ID - 100660682}
 
 \end{titlepage}
-
 \clearpage
-
+\nopagecolor
+\hypersetup{linkcolor=navyblue}
 \tableofcontents
+\hypersetup{linkcolor=blue}
 
 \clearpage
 
@@ -559,7 +567,8 @@ y&=3 \cdot (1 - \left[\frac{0}{3} \ mod \ 2\right]) \\
 \end{split}
 \end{equation}
 
-\mintinline{pascal}{y} is now the two elements from the right point of the diamond and will be skipped this iteration then, given \mintinline{pascal}{x += nextStep} in the next iteration, \mintinline{pascal}{x} will now be $3$, so if we plug that into the formula again, we get:
+\mintinline{pascal}{y} is now the two elements from the right point of the diamond and will be skipped this iteration then, given
+\\ \mintinline{pascal}{x += nextStep} in the next iteration, \mintinline{pascal}{x} will now be $3$, so if we plug that into the formula again, we get:
 
 \begin{equation}
 \begin{split}
@@ -1172,5 +1181,5 @@ As demonstrated in this article, it's completely within the grasp of the reader 
 \appendix
 \setcounter{secnumdepth}{0}
 \section{Source Code \& Repository}
-The complete finished project directory and all source code files referenced in this article can be downloaded from the repository listed on \href{https://github.com/jacobmilligan/intro_hd_report}{github.com} by cloning or forking the project via git, or simple navigating to the 'clone or download' button and downloading as a .zip file. The repository includes all resource files alongside \mintinline[breaklines]{pascal}{MapUtils.pas}. If you have find any issues or bugs in the code provided, feel free to open a new issue on the repository page or fork and contribute any fixes or additions.
+The complete finished project directory and all source code files referenced in this article can be downloaded from the repository listed on \href{https://github.com/jacobmilligan/intro_hd_report}{github.com} by cloning or forking the project via git, or simple navigating to the 'clone or download' button and downloading as a .zip file. The repository includes all resource files alongside \\ \mintinline[breaklines]{pascal}{MapUtils.pas}. If you have find any issues or bugs in the code provided, feel free to open a new issue on the repository page or fork and contribute any fixes or additions.
 \end{document}
