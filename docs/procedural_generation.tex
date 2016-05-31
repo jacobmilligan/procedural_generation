@@ -398,8 +398,8 @@ procedure GenerateTerrain(var map: MapData);
 			\State $midPoint \gets$ Average four corners $+ \ (Random(maxHeight) \times smoothness)$
 		\EndFor
 		\ForAll{Diamonds in the map} \Comment{We now have diamonds, do diamond step}
+			\State $pointCount \gets 0$
 			\ForAll{$point$ in a diamond}
-				\State $pointCount \gets 0$
 				\If{Within boundaries of the tile grid}
 					\State $midPoint \gets midPoint \ + \ point$
 					\State $pointCount\gets pointCount+1$
