@@ -58,6 +58,18 @@
 \defcounter {refsection}{0}\relax 
 \contentsline {paragraph}{Now that we've implemented our drawing procedure, let's move onto input and collision detection:}{26}{section*.19}
 \defcounter {refsection}{0}\relax 
+\contentsline {subsection}{\numberline {3.3}Finishing Up}{27}{subsection.3.3}
+\defcounter {refsection}{0}\relax 
 \contentsline {paragraph}{We're almost done.}{27}{section*.20}
 \defcounter {refsection}{0}\relax 
 \contentsline {paragraph}{The primary addition here, is to search for the players spawn point.}{29}{section*.21}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{Finally, edit \mintinline [breaklines]{pascal}{Main()} so that it calls the new procedures.}{29}{section*.22}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{Finally, build and run the game and you should have a fully procedurally generated world able to be navigated by the player.}{31}{section*.23}
+\defcounter {refsection}{0}\relax 
+\contentsline {section}{\numberline {4}Extending \& Investigating}{31}{section.4}
+\defcounter {refsection}{0}\relax 
+\contentsline {section}{Appendix}{32}{section*.25}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{\relax \fontsize {12}{14}\selectfont Source Code \& Repository}{32}{section*.26}

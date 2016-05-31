@@ -20,8 +20,6 @@
 \usepackage{pgfplots}
 \usepackage{changepage}
 
-
-
 \mdfsetup{skipabove=0pt,skipbelow=0pt}
 
 \spaceskip=1mm
@@ -106,7 +104,7 @@ domain=0:1]
 \subsection{Procedural over Manual}
 
 
-Very broadly speaking, in game development there are two primary ways to generate content for a project. The most common and controllable way is to make each part by hand - in our case we'll be referring to a 2D tile map as our content.
+Very broadly speaking, in game development there are two primary ways to generate content for a project. The most common and controllable way is to produce each part by hand - in our case we'll be referring to a 2D tile map as our content.
 		
 For small maps this isn't a problem; it's very straight-forward to declare each tile as an element of a statically-sized 2D array (we'll go into how this is done later) and just draw those tiles 	to the screen, perhaps also drawing different sprites on top of each tile for NPC's or the player. But what happens as our map grows in size? As it goes from a $32 \times 32$ map to a $256 \times 256$ sized map, or even larger? Even if we've created a system for writing our maps out as text files to be read in, already saving lots of time, this can very quickly become time-consuming. This is a valid way of generating content, in fact the developers on CD Projekt Red's The Witcher 3: Wild Hunt did just that \parencite{witcher}, a pretty amazing feat. However, we don't have the resources or manpower of CD Projekt Red, so what's the solution?
 		
@@ -712,7 +710,7 @@ Before we dive into coding our \mintinline[breaklines]{pascal}{GenerateTerrain()
 \end{algorithmic}
 \end{algorithm}
 
-Essentially all we need to do is iterate over our entire 2D heightmap and assign each tile a Bitmap based on its elevation value. At certain elevations we may choose to apply different processes later on, but all we're doing at the moment is assigning the right tile Bitmap to the right elevation value. The second part of the process is generating appropriate tree Bitmaps based on a very random process; it's highly encouraged to extend this and explore forest generation algorithms that work by creating seeds, sunlight, and maturation processes (see \cite{forests}) but for the moment we're going to apply a process to achieve a semi-procedural result.
+Essentially all we need to do is iterate over our entire 2D heightmap and assign each tile a Bitmap based on its elevation value. At certain elevations we may choose to apply different processes later on, but all we're doing at the moment is assigning the right tile Bitmap to the right elevation value. The second part of the process is generating appropriate tree Bitmaps based on a very random process; it's highly encouraged to extend this and explore \label{forestalgo}forest generation algorithms that work by creating seeds, sunlight, and maturation processes (see \cite{forests}) but for the moment we're going to apply a process to achieve a semi-procedural result.
 
 \begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
 // Generates the terrain type for each tile based off its elevation value
@@ -987,6 +985,8 @@ end;
 
 In the above \mintinline[breaklines]{pascal}{if..then} statements we check to see if the players predicted $x$ or $y$ values are outside the map bounds or are on top of a collidable tile. If either of these conditions are true, then we reset either one or both axis' by assigning \mintinline[breaklines]{pascal}{newX or newY} the players original coordinate values. Finally, we assign the new tile-based coordinates, whether they've changed or not, to the player directly and call the SwinGame \mintinline[breaklines]{pascal}{SpriteSetX()} \& \mintinline[breaklines]{pascal}{SpriteSetY()} procedures to actually change the players in-game pixel-based coordinates by multiplying the tile values by the maps \mintinline[breaklines]{pascal}{tilesize} value.
 
+\subsection{Finishing Up}
+
 \paragraph{We're almost done.} However, first we need to append our \mintinline[breaklines]{pascal}{Main()} \& \mintinline[breaklines]{pascal}{CreateMap()} procedures with some new code to allow our player to spawn in a correct location and to handle input.
 \
 Edit \mintinline[breaklines]{pascal}{CreateMap()} with the following code:
@@ -1072,6 +1072,87 @@ If the specified seed or random seed value produces a map with only water tiles 
 
 \paragraph{Finally, edit \mintinline[breaklines]{pascal}{Main()} so that it calls the new procedures.} We'll also add a little bit of code to delay the players movement so that \mintinline[breaklines]{pascal}{HandleInput()} is only called once every 3 frames rather than every frame, otherwise the movement speed of the player would be too fast.
 
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
+procedure Main();
+const
+	MOVE_INTERVAL = 4;
+var
+	map: MapData;
+	moveDelay: Integer;
+begin
+
+	LoadResources();
+  
+  OpenGraphicsWindow('Procedural Map Generation', 800, 600);
+  
+	map := CreateMap(513, true);
+
+	moveDelay := 0;
+	repeat
+		ProcessEvents();
+
+		ClearScreen(ColorBlack);
+		
+		// Only moves the player at specific intervals so as to
+		// limit from running super fast
+		moveDelay += 1;
+		if moveDelay > MOVE_INTERVAL then
+		begin
+			HandleInput(map);
+			moveDelay := 0;
+		end;
+
+		UpdateCamera(map);
+		DrawMap(map);
+		DrawSprite(map.player);
+\end{minted}
+
+Furthermore, we'll also check if the player has typed escape and then draw the small map representation to the screen until escape is typed again. This way the player is able to know their position on the map at any given moment:
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
+		// Create map drawing loop to show player where they are
+		if KeyTyped(EscapeKey) then
+		begin
+			ProcessEvents();
+			repeat
+				ProcessEvents();
+				DrawMapCartography(map); // Draw the map to screen
+			until KeyTyped(EscapeKey) or WindowCloseRequested();
+		end;
+
+		RefreshScreen(60);
+	until WindowCloseRequested();
+end;
+\end{minted}
+
+Note, that we've also called \mintinline[breaklines]{pascal}{CreateMap()} with a size value of $2^{9}+1 = 513$ in order to generate our map without hitting any errors. If you want to generate maps of different sizes, just remember they must be of size 
+\\
+$2^{n}+1$.
+
+\paragraph{Finally, build and run the game and you should have a fully procedurally generated world able to be navigated by the player.}
+
+\section{Extending \& Investigating}
+Our goal at the beginning of this article was to implement a realistic heightmap generation algorithm and use it to procedurally generate terrain and features on a 2D tile-based map. Ultimately, this goal has been reached while also touching on other complex problems such as collision detection and efficient drawing procedures while also making use of an external API in the form of SwinGame.
+\par
+However, the resulting program is just a starting point and has been built in such a way that it can be extended as needed. This is highly encouraged and there a plethora of algorithms and processes for:
+\begin{itemize}
+\item
+Carving out rivers using a combination of Hart, Nilsson, and Raphaels A* Pathfinding algorithm \parencite{astar} to find the shortest path to the ocean or a lake using elevation as the path cost, in combination with Diamond-Square to distort the river paths realistically.
+\item
+Producing dense forests via a combination of procedures previously mentioned \hyperref[forestalgo]{here} and various cellular automata processes
+\item
+Generating flora and fauna such as flowers and rabbits by simulating seeds, growth, breeding, and lifespan factors. The possibilities here, in particular, are truly enormous.
+\item
+And, as in Dwarf Fortress, the use of narrative generation algorithms to carve out of entire centuries of history and create entire back stories for a game.
+\end{itemize}
+
+As demonstrated in this article, it's within the grasp of the reader to create realistic terrain that's unique and interesting without needing to create all content manually. The possibilities are endless, only limited by your imagination.
+
 \printbibliography
-	
+
+\appendix
+\setcounter{secnumdepth}{0}
+\section{Appendix}
+\paragraph{\large Source Code \& Repository} ~\\
+The complete finished project directory and all source code files referenced in this article can be downloaded from the repository listed on \href{https://github.com/jacobmilligan/intro_hd_report}{github.com} by cloning or forking the project via git, or simple navigating to the 'clone or download' button and downloading as a .zip file. The repository includes all resource files alongside \mintinline[breaklines]{pascal}{MapUtils.pas}. If you have find any issues or bugs in the code provided, feel free to open a new issue on the repository page or fork and contribute any fixes or additions.
 \end{document}
