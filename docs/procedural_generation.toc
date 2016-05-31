@@ -1,0 +1,63 @@
+\boolfalse {citerequest}\boolfalse {citetracker}\boolfalse {pagetracker}\boolfalse {backtracker}\relax 
+\defcounter {refsection}{0}\relax 
+\contentsline {section}{\numberline {1}Procedural Generation}{2}{section.1}
+\defcounter {refsection}{0}\relax 
+\contentsline {subsection}{\numberline {1.1}Procedural over Manual}{2}{subsection.1.1}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{Procedural Generation algorithms are the solution}{2}{section*.2}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{"So then where do we start?"}{2}{section*.3}
+\defcounter {refsection}{0}\relax 
+\contentsline {subsection}{\numberline {1.2}Diamonds \& Squares}{2}{subsection.1.2}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{The basic concept behind Diamond-Square can be summed up like so:}{3}{section*.4}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{Using this algorithm, we now have the ability to generate a starting point.}{4}{section*.5}
+\defcounter {refsection}{0}\relax 
+\contentsline {section}{\numberline {2}Coding Terrain Generation}{5}{section.2}
+\defcounter {refsection}{0}\relax 
+\contentsline {subsection}{\numberline {2.1}Setting Up}{5}{subsection.2.1}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{We need to implement Diamond-Square before we can do any other terrain generation.}{5}{section*.6}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{That's a lot of code, so let's step through it.}{7}{section*.7}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{Here, we declare our most important records and types.}{10}{section*.8}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{Finally, we declare our \mintinline {pascal}{MapData} type.}{10}{section*.9}
+\defcounter {refsection}{0}\relax 
+\contentsline {subsection}{\numberline {2.2}Implementing Diamond-Square}{11}{subsection.2.2}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{Moving onto the \mintinline {pascal}{implementation} section, we can now build our terrain generation algorithms.}{11}{section*.10}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{The diamond step is a little more complicated.}{15}{section*.11}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{We're almost done.}{16}{section*.12}
+\defcounter {refsection}{0}\relax 
+\contentsline {subsection}{\numberline {2.3}Testing}{16}{subsection.2.3}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{The most complex and difficult part is out of the way.}{16}{section*.13}
+\defcounter {refsection}{0}\relax 
+\contentsline {subsection}{\numberline {2.4}Generating Terrain and Features}{19}{subsection.2.4}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{In order to graphically represent terrain, we need to assign Bitmaps and \mintinline [breaklines]{pascal}{FeatureTypes}.}{19}{section*.14}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{You will have noticed both \mintinline [breaklines]{pascal}{SetTile()} \& \mintinline [breaklines]{pascal}{SetFeature()} procedures.}{22}{section*.15}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{Return to \mintinline [breaklines]{pascal}{CreateMap()}}{23}{section*.16}
+\defcounter {refsection}{0}\relax 
+\contentsline {section}{\numberline {3}Drawing, Input, and Collision}{23}{section.3}
+\defcounter {refsection}{0}\relax 
+\contentsline {subsection}{\numberline {3.1}Drawing the map}{23}{subsection.3.1}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{Before we implement \mintinline [breaklines]{pascal}{DrawMap()}, we need to create a function to check if a particular element is inside the bounds of the tile grid.}{24}{section*.17}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{Once we've implemented \mintinline [breaklines]{pascal}{IsInMap()} we can move onto \mintinline [breaklines]{pascal}{DrawMap()}:}{25}{section*.18}
+\defcounter {refsection}{0}\relax 
+\contentsline {subsection}{\numberline {3.2}Handling Input}{26}{subsection.3.2}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{Now that we've implemented our drawing procedure, let's move onto input and collision detection:}{26}{section*.19}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{We're almost done.}{27}{section*.20}
+\defcounter {refsection}{0}\relax 
+\contentsline {paragraph}{The primary addition here, is to search for the players spawn point.}{29}{section*.21}

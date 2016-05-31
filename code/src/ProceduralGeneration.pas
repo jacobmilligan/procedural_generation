@@ -29,6 +29,39 @@ begin
 	end;
 end;
 
+
+
+// Prints all of the elevation data in a tilemap to the console.
+// Don't use for maps larger than 16 x 16 or it will be bigger than the console window
+procedure PrintMapToConsole(constref map: MapData);
+var
+	x, y: Integer;
+begin
+	for x := 0 to High(map.tiles) do
+  begin
+  	for y := 0 to High(map.tiles) do
+  	begin
+  		Write(map.tiles[x, y].elevation, ' ');
+  	end;
+  	WriteLn();
+  end;
+end;
+
+//
+//	Determines whether a given point is inside the tilemap or not
+//
+function IsInMap(constref map: MapData; x, y: Integer): Boolean;
+begin
+	result := false;
+
+	// Check map bounds. As every map is (2^n)+1 in size, the bounds
+	// stop at High()-1 which will be a number equal to 2^n.
+	if (x > 0) and (x < High(map.tiles) - 1) and (y > 0) and (y < High(map.tiles) - 1) then
+	begin
+		result := true;
+	end;
+end;
+
 //
 //	Initializes a new tile grid and then generates a new map using DiamondSquare().
 //	The new map can be random or based off a given seed
@@ -90,37 +123,6 @@ begin
 	if not spawnFound then
 	begin
 		CreateMap(size, true, seed);
-	end;
-end;
-
-// Prints all of the elevation data in a tilemap to the console.
-// Don't use for maps larger than 16 x 16 or it will be bigger than the console window
-procedure PrintMapToConsole(constref map: MapData);
-var
-	x, y: Integer;
-begin
-	for x := 0 to High(map.tiles) do
-  begin
-  	for y := 0 to High(map.tiles) do
-  	begin
-  		Write(map.tiles[x, y].elevation, ' ');
-  	end;
-  	WriteLn();
-  end;
-end;
-
-//
-//	Determines whether a given point is inside the tilemap or not
-//
-function IsInMap(constref map: MapData; x, y: Integer): Boolean;
-begin
-	result := false;
-
-	// Check map bounds. As every map is (2^n)+1 in size, the bounds
-	// stop at High()-1 which will be a number equal to 2^n.
-	if (x > 0) and (x < High(map.tiles) - 1) and (y > 0) and (y < High(map.tiles) - 1) then
-	begin
-		result := true;
 	end;
 end;
 

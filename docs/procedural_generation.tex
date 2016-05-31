@@ -17,6 +17,10 @@
 \usepackage{sourcecodepro}
 \usepackage{algpseudocode}
 \usepackage{mdframed}
+\usepackage{pgfplots}
+\usepackage{changepage}
+
+
 
 \mdfsetup{skipabove=0pt,skipbelow=0pt}
 
@@ -42,15 +46,61 @@
 	citecolor  = darkgray
 }
 
-\title{2D Procedural Map Generation \\ \large With Pascal \& SwinGame}
-\author{Jacob Milligan \\ \small Student ID - 100660682}
-\date{}
-
 \begin{document}
 
-\maketitle
-	
-	
+\begin{titlepage}
+
+\centering
+\vspace*{0.3cm}
+
+\Huge
+\begin{mdframed}[backgroundcolor=lightgray,linecolor=lightgray]
+\centering
+\vspace{7mm}
+\rule{\textwidth}{2mm}
+
+\textbf{2D \ \ Procedural \ \ Map \ \ Generation} 
+
+\vspace{3mm}
+
+\rule{\textwidth}{2mm}
+\huge
+\vfill
+\
+\textbf{With Pascal \& SwinGame}
+\vspace{7mm}
+\end{mdframed}
+
+\vfill
+
+\begin{tikzpicture}
+\begin{axis}[
+width=0.8\textwidth,
+height=0.8\textwidth,
+xlabel=$x$,
+ylabel=$y$,
+hide axis]
+\addplot3[surf,
+colormap/cool,
+domain=0:1]
+{sin(deg(8*pi*x))* exp(-20*(y-0.5)^2)
++ exp(-(x-0.5)^2*30
+- (y-0.25)^2 - (x-0.5)*(y-0.25))};
+\end{axis}
+\end{tikzpicture}
+
+\vfill
+\large
+\textbf{Jacob Milligan \\ \small Student ID - 100660682}
+
+\end{titlepage}
+
+\clearpage
+
+\tableofcontents
+
+\clearpage
+
 \section{Procedural Generation}
 
 \subsection{Procedural over Manual}
@@ -823,7 +873,9 @@ end;
 \end{mdframed}
 
 \paragraph{Once we've implemented \mintinline[breaklines]{pascal}{IsInMap()} we can move onto \mintinline[breaklines]{pascal}{DrawMap()}:} 
-\bigskip
+\
+\vspace{0.5cm}
+
 \begin{mdframed}[backgroundcolor=darkgray]
 \begin{minted}[style=native,tabsize=2,breaklines]{pascal}
 //
@@ -858,6 +910,167 @@ begin
 end;
 \end{minted}
 \end{mdframed}
+
+\
+
+In our \mintinline[breaklines]{pascal}{DrawMap()} procedure we create a new \mintinline[breaklines]{pascal}{TileView} record, this is from the \mintinline[breaklines]{bash}{MapUtils.pas} unit file and is used to translate the current camera view in pixels ($800 \times 600$ in the case of our game) into tile grid coordiantes ($25 \times 19$). We then make use of the \mintinline[breaklines]{pascal}{x, right, y, bottom record} members it returns to draw whatever tiles are currently within the cameras view to the screen through a nested \mintinline[breaklines]{pascal}{for..do} loop, ensuring that the tile is inside the map bounds and has an assigned bitmap before drawing it. It's important when creating large maps to ensure that only the tiles that are visible are drawn to the screen - if we were drawing $512 \cdot 512 = 262,144$ tiles to the screen at each game loop, the program would run extremely slow.
+ 
+\subsection{Handling Input}
+\paragraph{Now that we've implemented our drawing procedure, let's move onto input and collision detection:}
+
+ 
+ \vspace{0.5cm}
+ \
+ \begin{mdframed}[backgroundcolor=darkgray]
+ \begin{minted}[style=native,tabsize=2,breaklines]{pascal}
+procedure HandleInput(var map: MapData);
+var
+	newX, newY: Integer;
+begin
+
+	// Used to determine if they should be allowed to move in a given direction
+	newX := map.playerX;
+	newY := map.playerY;
+
+	// Change values depending on direction
+	if KeyDown(UpKey) then
+	begin
+		newY -= 1;
+	end;
+	if KeyDown(RightKey) then
+	begin
+		newX += 1;
+	end;
+	if KeyDown(DownKey) then
+	begin
+		newY += 1;
+	end;
+	if KeyDown(LeftKey) then
+	begin
+		newX -= 1;
+	end;
+ \end{minted}
+ \end{mdframed}
+ \
+ 
+Here, we pass in our \mintinline[breaklines]{pascal}{MapData} variable and save the players current tile grid based $x$ and $y$ values with \mintinline[breaklines]{pascal}{newX} \& \mintinline[breaklines]{pascal}{newY} because we'll be altering this data later. Next we use the SwinGame procedure \mintinline[breaklines]{pascal}{KeyDown()} to move the players $x$ \& $y$ values in the right direction. Essentially we're \emph{predicting} what the players coordinates will be on the next iteration of the game loop before we \emph{actually} move the player, which is why we aren't assigning these new coordinates to the player directly, rather saving the predicted coordinates in order to do some collision detection:
+ 
+ \clearpage
+ 
+ \begin{mdframed}[backgroundcolor=darkgray]
+ \begin{minted}[style=native,tabsize=2,breaklines]{pascal}
+	//	If either newX or newY are outside the map bounds or are a collidable tile, reset
+	//	the players position and don't move them
+	if (newX <= 0) or (newX >= High(map.tiles) - 1) or (map.tiles[newX, newY].collidable) then
+	begin
+		newX := map.playerX;
+	end;
+	if (newY <= 0) or (newY >= High(map.tiles) - 1) or (map.tiles[newX, newY].collidable) then
+	begin
+		newY := map.playerY;
+	end;
+
+	// Assign the new values to the player
+	map.playerY := newY;
+	map.playerX := newX;
+
+	// Move the player according to world coordinates rather than tile
+	// coordinates by multiplying their tile coordinates by the tilesize
+	SpriteSetY(map.player, map.playerY * map.tilesize);
+	SpriteSetX(map.player, map.playerX * map.tilesize);
+
+end;
+ \end{minted}
+ \end{mdframed}
+
+\
+
+In the above \mintinline[breaklines]{pascal}{if..then} statements we check to see if the players predicted $x$ or $y$ values are outside the map bounds or are on top of a collidable tile. If either of these conditions are true, then we reset either one or both axis' by assigning \mintinline[breaklines]{pascal}{newX or newY} the players original coordinate values. Finally, we assign the new tile-based coordinates, whether they've changed or not, to the player directly and call the SwinGame \mintinline[breaklines]{pascal}{SpriteSetX()} \& \mintinline[breaklines]{pascal}{SpriteSetY()} procedures to actually change the players in-game pixel-based coordinates by multiplying the tile values by the maps \mintinline[breaklines]{pascal}{tilesize} value.
+
+\paragraph{We're almost done.} However, first we need to append our \mintinline[breaklines]{pascal}{Main()} \& \mintinline[breaklines]{pascal}{CreateMap()} procedures with some new code to allow our player to spawn in a correct location and to handle input.
+\
+Edit \mintinline[breaklines]{pascal}{CreateMap()} with the following code:
+\
+\vspace{0.5cm}
+
+\begin{adjustwidth}{-1.5cm}{-1.5cm}
+\begin{mdframed}[backgroundcolor=darkgray]
+\begin{minted}[style=native,tabsize=2,breaklines]{pascal}
+//	Initializes a new tile grid and then generates a new map using DiamondSquare().
+//	The new map can be random or based off a given seed
+function CreateMap(size: Integer; random: Boolean; seed: Integer = 0): MapData;
+var
+	i, j: Integer;
+	spawnFound: Boolean;
+begin
+	result.tilesize := 32;
+	result.size := size;
+	result.player := CreateSprite('player', BitmapNamed('player'));
+
+	// Setup seed
+	if random then
+	begin
+		Randomize;
+	end
+	else
+	begin
+		RandSeed := seed;
+	end;
+
+	// Initialize Tile Grid
+	SetGridLength(result.tiles, size);
+	// Generate Heightmap
+	DiamondSquare(result, 100, 20);
+
+	GenerateTerrain(result);
+
+	//	Search for the first sand tile without a feature on it, thus spawning the player on a beach
+	spawnFound := false;
+	for i := 0 to High(result.tiles) do
+	begin
+		if spawnFound then
+			break;
+
+		for j := 0 to High(result.tiles) do
+		begin
+			if spawnFound then
+				break;
+
+			// Search for a sand tile to spawn the player on
+			if (i > 1) and (result.tiles[i, j].flag = Sand) and (result.tiles[i, j].feature = NoFeature) then
+			begin
+				SpriteSetX(result.player, i * 32);
+				SpriteSetY(result.player, j * 32);
+				result.playerX := i;
+				result.playerY := j;
+				spawnFound := true;
+			end;
+		end;
+	end;
+
+	// Recursively call self with new random value if spawn not found
+	if not spawnFound then
+	begin
+		CreateMap(size, true, seed);
+	end;
+end;
+\end{minted}
+\end{mdframed}
+\end{adjustwidth}
+
+\paragraph{The primary addition here, is to search for the players spawn point.} We create a nested \mintinline[breaklines]{pascal}{for..do} loop to iterate the tile grid and search for the first sand tile, then assign the players position accordingly; a very simple way to find a spawn point but effective enough for our program. The most interesting section of code in this procedure is also the shortest:
+
+\begin{minted}[bgcolor=darkgray,style=native,tabsize=2,breaklines]{pascal}
+// Recursively call self with new random value if spawn not found
+if not spawnFound then
+begin
+	CreateMap(size, true, seed);
+end;
+\end{minted}
+
+If the specified seed or random seed value produces a map with only water tiles then we use \textbf{recursion} to call \mintinline[breaklines]{pascal}{CreateMap()} itself again but with a new random seed. The idea of recursion in programming occurrs when part of a procedure or function calls itself and runs the same block of code again, often with new parameters; the return value of which follows the chain of recursion back to the start, itself being recursive by definition \parencite{recursion}. This means that the \mintinline[breaklines]{pascal}{CreateMap()} procedure will keep calling itself until it produces a valid map with a valid spawn point.
+
+\paragraph{Finally, edit \mintinline[breaklines]{pascal}{Main()} so that it calls the new procedures.} We'll also add a little bit of code to delay the players movement so that \mintinline[breaklines]{pascal}{HandleInput()} is only called once every 3 frames rather than every frame, otherwise the movement speed of the player would be too fast.
 
 \printbibliography
 	
