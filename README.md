@@ -1,6 +1,6 @@
 # 2D Procedural Map Generation
 ## With SwinGame & Pascal
-#### [Full article.](http://jacobmilligan.github.io/procedural_generation/])
+#### [Full article.](http://jacobmilligan.github.io/procedural_generation/)
 
 A step-by-step on how to implement procedural terrain generation using the Diamond-Square algorithm alongside various other terrain generation techniques. Contributions are welcome.
 
